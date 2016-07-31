@@ -39,7 +39,8 @@ RU = {
     'EDIT': 'Изменить',
     'DELETE': 'Удалить',
     'EDIT_TOOLTIP_TEXT': 'Изменить эту задачу',
-    'DELETE_TOOLTIP_TEXT': 'Удалить эту задачу'
+    'DELETE_TOOLTIP_TEXT': 'Удалить эту задачу',
+    'NO_TASKS': 'Нет задач для отображения'
 }
 
 EN = {
@@ -73,7 +74,8 @@ EN = {
     'EDIT': 'Edit',
     'DELETE': 'Delete',
     'EDIT_TOOLTIP_TEXT': 'Edit this reminder',
-    'DELETE_TOOLTIP_TEXT': 'Delete this reminder'
+    'DELETE_TOOLTIP_TEXT': 'Delete this reminder',
+    'NO_TASKS': 'No entries to show'
 }
 
 langs = {'RU': RU, 'EN': EN}
@@ -555,29 +557,34 @@ class EditWindow(QWidget):
                 self.grid.itemAt(i).widget().close()
 
         self.rows = [{} for i in range(len(tasks))]
-        for i in range(len(tasks)):
-            datetime = ' '.join((dateToStr(tasks[i].getDateTime())['date'],
-                                 dateToStr(tasks[i].getDateTime())['time']))
-            # replace newlines and tabs in text, cut in on 25 symbols
-            text = tasks[i].text.replace('\n', ' ').replace('\t', '   ')
-            text = text[:25] + '...' if len(text) > 25 else text
-            row = {}
-            row['date'] = QLabel(datetime)
-            row['text'] = QLabel(text)
-            row['edit'] = QPushButton(language['EDIT'])
-            row['del'] = QPushButton(language['DELETE'])
-            row['edit'].setToolTip(language['EDIT_TOOLTIP_TEXT'])
-            row['del'].setToolTip(language['DELETE_TOOLTIP_TEXT'])
-            # pass k=i to lambda function to save value of i
-            row['edit'].clicked.connect(lambda checked, k=i: self.edit(k))
-            row['del'].clicked.connect(lambda checked, k=i: self.delete(k))
+        if len(tasks) == 0:
+            noLbl = QLabel(language['NO_TASKS'])
+            noLbl.setAlignment(Qt.AlignCenter)
+            self.grid.addWidget(noLbl, 0, 0, 1, 5)
+        else:
+            for i in range(len(tasks)):
+                datetime = ' '.join((dateToStr(tasks[i].getDateTime())['date'],
+                                     dateToStr(tasks[i].getDateTime())['time']))
+                # replace newlines and tabs in text, cut in on 25 symbols
+                text = tasks[i].text.replace('\n', ' ').replace('\t', '   ')
+                text = text[:25] + '...' if len(text) > 25 else text
+                row = {}
+                row['date'] = QLabel(datetime)
+                row['text'] = QLabel(text)
+                row['edit'] = QPushButton(language['EDIT'])
+                row['del'] = QPushButton(language['DELETE'])
+                row['edit'].setToolTip(language['EDIT_TOOLTIP_TEXT'])
+                row['del'].setToolTip(language['DELETE_TOOLTIP_TEXT'])
+                # pass k=i to lambda function to save value of i
+                row['edit'].clicked.connect(lambda checked, k=i: self.edit(k))
+                row['del'].clicked.connect(lambda checked, k=i: self.delete(k))
 
-            self.rows[i] = row
+                self.rows[i] = row
 
-            self.grid.addWidget(self.rows[i]['date'], i, 0)
-            self.grid.addWidget(self.rows[i]['text'], i, 1, 1, 2)
-            self.grid.addWidget(self.rows[i]['edit'], i, 3)
-            self.grid.addWidget(self.rows[i]['del'], i, 4)
+                self.grid.addWidget(self.rows[i]['date'], i, 0)
+                self.grid.addWidget(self.rows[i]['text'], i, 1, 1, 2)
+                self.grid.addWidget(self.rows[i]['edit'], i, 3)
+                self.grid.addWidget(self.rows[i]['del'], i, 4)
         # add spacer to pin rows to window's top side
         spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
         self.grid.addItem(spacer, len(tasks), 0, 1, 5)

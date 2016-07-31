@@ -1,6 +1,6 @@
 ### eventer
 
-Simple task notifier.
+Simple reminder.
 
 Needs Python3 and PyQt5 to run.
 
