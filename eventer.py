@@ -81,7 +81,7 @@ language = RU
 
 """ preliminary definitions """
 
-errors = []  # see line 628
+errors = []  # see line 632
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
