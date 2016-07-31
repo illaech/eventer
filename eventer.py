@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import *
 
 """ language definitions """
 RU = {
+    'NAME': 'RU',
     'CANT_FIND_DIR': 'Не найдена директория',
     'UNSUPPORT_SYS': 'Неподдерживаемая система',
     'CANT_CREATE_DIR': 'Не могу создать директорию',
@@ -42,6 +43,7 @@ RU = {
 }
 
 EN = {
+    'NAME': 'EN',
     'CANT_FIND_DIR': 'Can\'t find directory',
     'UNSUPPORT_SYS': 'Unsupported system',
     'CANT_CREATE_DIR': 'Can\'t create directory',
@@ -117,11 +119,12 @@ tasks = []
 def rewrite():
     """Update tasks file"""
     try:
-       global tasks
-       tasks = sorted(tasks, key=lambda x: strToDate('{} {}'.format(x.date,
+        global tasks
+        tasks = sorted(tasks, key=lambda x: strToDate('{} {}'.format(x.date,
                                                                     x.time)))
-       with open(filename, 'w') as f:
-           f.write('\n'.join([str(x) for x in tasks]))
+        with open(filename, 'w') as f:
+            f.write('#lang {}\n'.format(language['NAME']))
+            f.write('\n'.join([str(x) for x in tasks]))
     except IOError:
         errors.append(['{} "{}"'.format(language['CANT_OPEN_FILE'], filename),
                        'IOError: Can\'t open file!'])
@@ -624,6 +627,7 @@ def lang_select(lang):
     for l in w.lang:
         w.lang[l].setChecked(True)
     w.lang[lang].setChecked(True)
+    rewrite()
 
 # Because of qt needs a widget to show message, errors are stored
 # in list. When the main widget is created, every error in list
@@ -637,10 +641,15 @@ if len(errors) > 0:
 # Trying to read task list. If there's no file, task list is empty.
 try:
     with open(filename, 'r') as f:
-        lines = f.read().split('\n')
+        lines = f.readlines()
         for line in lines:
             try:
-                date, time, text = line.split('|')
+                if line[:5] == '#lang':
+                    lang = line[6:8]
+                    if lang in langs:
+                        lang_select(lang)
+                    continue
+                date, time, text = line.replace('\n', '').split('|')
                 text = text.split('\'')[1]
                 entry = Entry(date, time,
                               b64.b64decode(text).decode('utf-8'))
