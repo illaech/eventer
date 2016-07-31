@@ -16,6 +16,7 @@ RU = {
     'ERROR': 'Ошибка',
     'ADD_ACTION': 'Добавить задачу',
     'EDIT_ACTION': 'Изменить задачи',
+    'CHANGE_LANGUAGE': 'Сменить язык',
     'QUIT': 'Выход',
     'TASK': 'Задача',
     'CLOSE': 'Закрыть',
@@ -48,6 +49,7 @@ EN = {
     'ERROR': 'Error',
     'ADD_ACTION': 'Add new reminder',
     'EDIT_ACTION': 'Edit reminders',
+    'CHANGE_LANGUAGE': 'Change language',
     'QUIT': 'Quit',
     'TASK': 'Reminder',
     'CLOSE': 'Close',
@@ -72,11 +74,12 @@ EN = {
     'DELETE_TOOLTIP_TEXT': 'Delete this reminder'
 }
 
-language = EN
+langs = {'RU': RU, 'EN': EN}
+language = RU
 
 """ preliminary definitions """
 
-errors = []  # see line 599
+errors = []  # see line 628
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -209,12 +212,27 @@ class MainWindow(QWidget):
         self.tray = QSystemTrayIcon(QIcon('add.ico'), self)
 
         menu = QMenu()
-        addAction = menu.addAction(language['ADD_ACTION'],
-                    lambda: self.showWindow(QSystemTrayIcon.Trigger))
-        editAction = menu.addAction(language['EDIT_ACTION'],
-                     lambda: self.showWindow('editAction'))
+        menu.addAction(language['ADD_ACTION'],
+                       lambda: self.showWindow(QSystemTrayIcon.Trigger))
+        menu.addAction(language['EDIT_ACTION'],
+                       lambda: self.showWindow('editAction'))
         menu.addSeparator()
-        exitAction = menu.addAction(language['QUIT'], self.quit)
+        
+        langlist = QActionGroup(self, exclusive=True)
+        act_ru = QAction('Русский', self, checkable=True)
+        act_ru.triggered.connect(lambda evt: lang_select('RU'))
+        act_en = QAction('English', self, checkable=True)
+        act_en.triggered.connect(lambda evt: lang_select('EN'))
+        langlist.addAction(act_ru)
+        langlist.addAction(act_en)
+        
+        langmenu = menu.addMenu(language['CHANGE_LANGUAGE'])
+        langmenu.addAction(act_ru)
+        langmenu.addAction(act_en)
+        act_ru.setChecked(True)
+        self.lang = {'RU': act_ru, 'EN': act_en}
+        
+        menu.addAction(language['QUIT'], self.quit)
 
         self.tray.setContextMenu(menu)
         self.tray.activated.connect(self.showWindow)
@@ -292,10 +310,11 @@ class MainWindow(QWidget):
             self.editWindow.setFocus(True)
             self.editWindow.activateWindow()
 
-    def quit(self):
+    def quit(self, really=True):
         """ Quits application. Hides tray icon firstly. """
         self.tray.hide()
-        QCoreApplication.instance().quit()
+        if really:
+            QCoreApplication.instance().quit()
 
 
 class AddWindow(QWidget):
@@ -595,6 +614,16 @@ app = QApplication(sys.argv)
 # Do not exit app if there're no opened windows
 app.setQuitOnLastWindowClosed(False)
 w = MainWindow()
+
+def lang_select(lang):
+    global language
+    global w
+    language = langs[lang]
+    w.quit(False)
+    w = MainWindow()
+    for l in w.lang:
+        w.lang[l].setChecked(True)
+    w.lang[lang].setChecked(True)
 
 # Because of qt needs a widget to show message, errors are stored
 # in list. When the main widget is created, every error in list
