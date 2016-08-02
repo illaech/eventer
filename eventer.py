@@ -252,7 +252,7 @@ class MainWindow(QWidget):
         self.timer.start(1000, self)
 
     def timerEvent(self, event):
-        """ Checks tasks entry's time if it up. Shows message with
+        """ Checks tasks entry's time if it is up. Shows message with
         entry's text if its time's up.
 
         """
@@ -270,15 +270,15 @@ class MainWindow(QWidget):
                 msgBox.setWindowIcon(QIcon('alert.ico'))
                 msgBox.setIcon(QMessageBox.Information)
                 # msgBox.setTextFormat(Qt.RichText)
-                msgBox.addButton(QPushButton(language['CLOSE']),
-                                             QMessageBox.YesRole)
                 msgBox.addButton(QPushButton(language['REPEAT']),
+                                             QMessageBox.YesRole)
+                msgBox.addButton(QPushButton(language['CLOSE']),
                                              QMessageBox.NoRole)
                 msgBox.setWindowFlags(Qt.WindowStaysOnTopHint)
                 reply = msgBox.exec_()
                 msgBox.raise_()
 
-                if reply == 1:
+                if reply == 0:
                     date = dateToStr(dt.datetime.now() + dt.timedelta(0, 600))
                     tasks.append(Entry(date['date'], date['time'], entry.text))
                     rewrite()
