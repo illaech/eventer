@@ -550,7 +550,9 @@ class AddWindow(QWidget):
         """ Closes window. """
         event.ignore()
         if self.index != None:
+            self.parentWindow.show()
             self.parentWindow.window().show()
+            self.parentWindow.scroll.show()
             self.parentWindow.fill()
             self.parentWindow.parentWindow.addActive = False
         else:
@@ -710,7 +712,7 @@ def reload():
         if w.addActive:
             w.addActive = False
             if index != None:
-            w.showWindow('addAction')
+                w.showWindow('addAction')
                 w.addActive = False
                 w.editActive = False
                 w.showWindow('editAction')
