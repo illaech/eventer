@@ -1,6 +1,7 @@
 import os
 import sys
 from math import floor
+import json
 import datetime as dt
 import base64 as b64
 from PyQt5.QtGui import *
@@ -26,6 +27,8 @@ RU = {
     'SAVE': 'Сохранить',
     'DATE': 'Дата',
     'TIME': 'Время',
+    'DATE_DELIM': '.',
+    'TIME_DELIM': ':',
     'DATE_TOOLTIP_TEXT': 'Формат даты: дд.мм.гггг<br/>Можно использовать' \
                          ' сокращенные варианты: дд.мм.гг и дд.мм' \
                          ' и "/" вместо точек',
@@ -40,7 +43,8 @@ RU = {
     'DELETE': 'Удалить',
     'EDIT_TOOLTIP_TEXT': 'Изменить эту задачу',
     'DELETE_TOOLTIP_TEXT': 'Удалить эту задачу',
-    'NO_TASKS': 'Нет задач для отображения'
+    'NO_TASKS': 'Нет задач для отображения',
+    'SMTH_WRONG': 'Упс. Что-то пошло не так'
 }
 
 EN = {
@@ -61,6 +65,8 @@ EN = {
     'SAVE': 'Save',
     'DATE': 'Date',
     'TIME': 'Time',
+    'DATE_DELIM': '/',
+    'TIME_DELIM': '.',
     'DATE_TOOLTIP_TEXT': 'Date format: dd/mm/yyyy<br/>You also can use' \
                          ' short forms: dd/mm/yy and dd/mm,' \
                          ' and dots instead of slashes',
@@ -75,34 +81,72 @@ EN = {
     'DELETE': 'Delete',
     'EDIT_TOOLTIP_TEXT': 'Edit this reminder',
     'DELETE_TOOLTIP_TEXT': 'Delete this reminder',
-    'NO_TASKS': 'No entries to show'
+    'NO_TASKS': 'No entries to show',
+    'SMTH_WRONG': 'Oops. Something goes wrong'
 }
 
 langs = {'RU': RU, 'EN': EN}
-language = RU
+
+def langSelect(lang):
+    conf.lang = langs[lang]
+    reload()
+
+""" Config class """
+
+class Config:
+    supported = ('lang', 'tdelta')
+    lang = None
+    tdelta = None
+
+    def __init__(self, lang=RU, tdelta=600):
+        self.lang = lang
+        self.tdelta = tdelta
+
+    def __str__(self):
+        dic = {'lang': self.lang['NAME'], 'tdelta': self.tdelta}
+        return json.dumps(dic)
+
+    def load(self, dic):
+        for i in dic:
+            if i not in self.supported:
+                pass
+            else:
+                setattr(self, i, dic[i])
+
+    def dump(self, f):
+        try:
+            with open(f, 'w') as f_:
+                f_.write(str(self))
+        except IOError:
+            errors.append(['{} "{}"'.format(conf.lang['CANT_OPEN_FILE'], f),
+                           'IOError: Can\'t open file!'])
+
+conf = Config(RU, 600)
 
 """ preliminary definitions """
 
-errors = []  # see line 632
+errors = []  # see line 738
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
     if os.getenv('APPDATA') is not None:
         directory = '{}\\eventer'.format(os.getenv('APPDATA'))
         filename = '{}{}calendar.txt'.format(directory, '\\')
+        config = '{}{}config.txt'.format(directory, '\\')
     else:
-        errors.append(['{} %appdata%'.format(language['CANT_FIND_DIR']),
+        errors.append(['{} %appdata%'.format(conf.lang['CANT_FIND_DIR']),
                        'IOError: Can\'t find directory'])
 elif sys.platform == 'linux' or sys.platform == 'linux2':
     # if platform is linux, choose '~/.eventer'
     if os.getenv('HOME') is not None:
         directory = '{}/.eventer'.format(os.getenv('HOME'))
         filename = '{}{}calendar.txt'.format(directory, '/')
+        config = '{}{}config.txt'.format(directory, '/')
     else:
-        errors.append(['{} /home/user'.format(language['CANT_FIND_DIR']),
+        errors.append(['{} /home/user'.format(conf.lang['CANT_FIND_DIR']),
                        'IOError: Can\'t find directory'])
 else:
-   errors.append(['{}'.format(language['UNSUPPORT_SYS']),
+   errors.append(['{}'.format(conf.lang['UNSUPPORT_SYS']),
                   'OSError: Unsupported system'])
 
 if len(errors) == 0:
@@ -111,7 +155,7 @@ if len(errors) == 0:
             os.makedirs(directory)
         except:
             errors.append(['{} "{}"'.
-                           format(language['CANT_CREATE_DIR'], directory),
+                           format(conf.lang['CANT_CREATE_DIR'], directory),
                            'PermissionError: Can\'t create directory!'])
 
 tasks = []
@@ -119,22 +163,29 @@ tasks = []
 """ global functions """
 
 def rewrite():
-    """Update tasks file"""
+    """ Update tasks file """
     try:
         global tasks
         tasks = sorted(tasks, key=lambda x: strToDate('{} {}'.format(x.date,
-                                                                    x.time)))
+                                                                     x.time)))
         with open(filename, 'w') as f:
-            f.write('#lang {}\n'.format(language['NAME']))
             f.write('\n'.join([str(x) for x in tasks]))
     except IOError:
-        errors.append(['{} "{}"'.format(language['CANT_OPEN_FILE'], filename),
+        errors.append(['{} "{}"'.format(conf.lang['CANT_OPEN_FILE'], filename),
+                       'IOError: Can\'t open file!'])
+
+def rewriteConfig():
+    """ Update config file """
+    try:
+        conf.dump(config)
+    except IOError:
+        errors.append(['{} "{}"'.format(conf.lang['CANT_OPEN_FILE'], config),
                        'IOError: Can\'t open file!'])
 
 def dateToStr(datetime):
     """Convert datetime object to strings and return a dictionary"""
-    time = datetime.strftime('%H:%M:%S')
-    date = datetime.strftime('%d.%m.%Y')
+    time = datetime.strftime('%H{d}%M{d}%S'.format(d=conf.lang['TIME_DELIM']))
+    date = datetime.strftime('%d{d}%m{d}%Y'.format(d=conf.lang['DATE_DELIM']))
     return {'time': time, 'date': date}
 
 def strToDate(string):
@@ -144,7 +195,7 @@ def strToDate(string):
 
 def error(widget, text, textconsole):
     """Show error message"""
-    QMessageBox.critical(widget, language['ERROR'], text, QMessageBox.Ok,
+    QMessageBox.critical(widget, conf.lang['ERROR'], text, QMessageBox.Ok,
                          QMessageBox.Ok)
     # Here "raise Exception(textconsole)" can be used to close
     # the application immediately after the first error.
@@ -217,27 +268,27 @@ class MainWindow(QWidget):
         self.tray = QSystemTrayIcon(QIcon('add.ico'), self)
 
         menu = QMenu()
-        menu.addAction(language['ADD_ACTION'],
+        menu.addAction(conf.lang['ADD_ACTION'],
                        lambda: self.showWindow(QSystemTrayIcon.Trigger))
-        menu.addAction(language['EDIT_ACTION'],
+        menu.addAction(conf.lang['EDIT_ACTION'],
                        lambda: self.showWindow('editAction'))
         menu.addSeparator()
-        
+
         langlist = QActionGroup(self, exclusive=True)
         act_ru = QAction('Русский', self, checkable=True)
-        act_ru.triggered.connect(lambda evt: lang_select('RU'))
+        act_ru.triggered.connect(lambda evt: langSelect('RU'))
         act_en = QAction('English', self, checkable=True)
-        act_en.triggered.connect(lambda evt: lang_select('EN'))
+        act_en.triggered.connect(lambda evt: langSelect('EN'))
         langlist.addAction(act_ru)
         langlist.addAction(act_en)
-        
-        langmenu = menu.addMenu(language['CHANGE_LANGUAGE'])
+
+        langmenu = menu.addMenu(conf.lang['CHANGE_LANGUAGE'])
         langmenu.addAction(act_ru)
         langmenu.addAction(act_en)
         act_ru.setChecked(True)
         self.lang = {'RU': act_ru, 'EN': act_en}
-        
-        menu.addAction(language['QUIT'], self.quit)
+
+        menu.addAction(conf.lang['QUIT'], self.quit)
 
         self.tray.setContextMenu(menu)
         self.tray.activated.connect(self.showWindow)
@@ -266,13 +317,13 @@ class MainWindow(QWidget):
                 rewrite()
                 msgBox = QMessageBox()
                 msgBox.setText(entry.text)
-                msgBox.setWindowTitle('{} {}'.format(language['TASK'], date))
+                msgBox.setWindowTitle('{} {}'.format(conf.lang['TASK'], date))
                 msgBox.setWindowIcon(QIcon('alert.ico'))
                 msgBox.setIcon(QMessageBox.Information)
                 # msgBox.setTextFormat(Qt.RichText)
-                msgBox.addButton(QPushButton(language['REPEAT']),
+                msgBox.addButton(QPushButton(conf.lang['REPEAT']),
                                              QMessageBox.YesRole)
-                msgBox.addButton(QPushButton(language['CLOSE']),
+                msgBox.addButton(QPushButton(conf.lang['CLOSE']),
                                              QMessageBox.NoRole)
                 msgBox.setWindowFlags(Qt.WindowStaysOnTopHint)
                 reply = msgBox.exec_()
@@ -305,15 +356,19 @@ class MainWindow(QWidget):
             self.addWindow.show()
             self.addWindow.setFocus(True)
             self.addWindow.activateWindow()
+            return self.addWindow
         elif self.addActive:
             QApplication.alert(self.addWindow)
+            return self.addWindow
         elif self.editActive:
             QApplication.alert(self.editWindow)
+            return self.editWindow
         elif event == 'editAction':
             self.editWindow = EditWindow(self)
             self.editWindow.show()
             self.editWindow.setFocus(True)
             self.editWindow.activateWindow()
+            return self.editWindow
 
     def quit(self, really=True):
         """ Quits application. Hides tray icon firstly. """
@@ -327,7 +382,7 @@ class AddWindow(QWidget):
 
     Useful attributes
     -----------------
-    parent : MainWindow object
+    parentWindow : MainWindow object
         Parent of the window.
     (date|time)Edit : QLineEdit
     textEdit : QTextEdit
@@ -339,12 +394,12 @@ class AddWindow(QWidget):
         super().__init__()
         self.index = None
         self.initUI()
-        self.parent = parent
-        self.parent.addActive = True
+        self.parentWindow = parent
+        self.parentWindow.addActive = True
 
     def initUI(self):
         """ Init user interface. """
-        self.setWindowTitle(language['ADD_TITLE'])
+        self.setWindowTitle(conf.lang['ADD_TITLE'])
         self.setWindowIcon(QIcon('add.ico'))
 
         self.resize(350, 350)
@@ -354,27 +409,27 @@ class AddWindow(QWidget):
         grid = QGridLayout()
         self.setLayout(grid)
 
-        dateLbl = QLabel(language['DATE'])
-        timeLbl = QLabel(language['TIME'])
+        dateLbl = QLabel(conf.lang['DATE'])
+        timeLbl = QLabel(conf.lang['TIME'])
         self.dateEdit = QLineEdit()
         self.timeEdit = QLineEdit()
         self.textEdit = QTextEdit()
-        self.saveBtn = QPushButton(language['SAVE'])
-        self.closeBtn = QPushButton(language['CLOSE'])
+        self.saveBtn = QPushButton(conf.lang['SAVE'])
+        self.closeBtn = QPushButton(conf.lang['CLOSE'])
 
         dateLbl.setAlignment(Qt.AlignCenter)
         timeLbl.setAlignment(Qt.AlignCenter)
 
-        dateToolTipText = language['DATE_TOOLTIP_TEXT']
-        timeToolTipText = language['TIME_TOOLTIP_TEXT']
+        dateToolTipText = conf.lang['DATE_TOOLTIP_TEXT']
+        timeToolTipText = conf.lang['TIME_TOOLTIP_TEXT']
 
         self.dateEdit.setToolTip(dateToolTipText)
         self.timeEdit.setToolTip(timeToolTipText)
         dateLbl.setToolTip(dateToolTipText)
         timeLbl.setToolTip(timeToolTipText)
-        self.textEdit.setToolTip(language['TEXT_TOOLTIP_TEXT'])
-        self.saveBtn.setToolTip(language['SAVE_TOOLTIP_TEXT'])
-        self.closeBtn.setToolTip(language['CLOSE_TOOLTIP_TEXT'])
+        self.textEdit.setToolTip(conf.lang['TEXT_TOOLTIP_TEXT'])
+        self.saveBtn.setToolTip(conf.lang['SAVE_TOOLTIP_TEXT'])
+        self.closeBtn.setToolTip(conf.lang['CLOSE_TOOLTIP_TEXT'])
 
         grid.addWidget(dateLbl, 0, 0)
         grid.addWidget(timeLbl, 0, 1)
@@ -485,19 +540,21 @@ class AddWindow(QWidget):
         tasks.append(entry)
         rewrite()
         if self.index != None: # if addWindow is called from editWindow
-            self.parent.window().show()
-            self.parent.fill()
+            self.parentWindow.show()
+            self.parentWindow.window().show()
+            self.parentWindow.scroll.show()
+            self.parentWindow.fill()
         self.closeEvent(QCloseEvent())
 
     def closeEvent(self, event):
         """ Closes window. """
         event.ignore()
         if self.index != None:
-            self.parent.window().show()
-            self.parent.fill()
-            self.parent.parent.addActive = False
+            self.parentWindow.window().show()
+            self.parentWindow.fill()
+            self.parentWindow.parentWindow.addActive = False
         else:
-            self.parent.addActive = False
+            self.parentWindow.addActive = False
         self.hide()
 
 
@@ -506,7 +563,7 @@ class EditWindow(QWidget):
 
     Useful attributes
     -----------------
-    parent : MainWindow object
+    parentWindow : MainWindow object
         Parent of the window.
     scroll : QScrollArea object
         Scroll area of window.
@@ -523,8 +580,8 @@ class EditWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__()
         self.initUI()
-        self.parent = parent
-        self.parent.editActive = True
+        self.parentWindow = parent
+        self.parentWindow.editActive = True
 
     def initUI(self):
         """ Init user interface. """
@@ -541,7 +598,7 @@ class EditWindow(QWidget):
         self.scroll.show()
         self.scroll.move(QApplication.desktop().screen().rect().center() -
                          self.rect().center())
-        self.scroll.setWindowTitle(language['EDIT_TITLE'])
+        self.scroll.setWindowTitle(conf.lang['EDIT_TITLE'])
         self.scroll.setWindowIcon(QIcon('edit.ico'))
         self.scroll.closeEvent = self.closeEvent
         self.scroll.mousePressEvent = self.mousePressEvent
@@ -558,7 +615,7 @@ class EditWindow(QWidget):
 
         self.rows = [{} for i in range(len(tasks))]
         if len(tasks) == 0:
-            noLbl = QLabel(language['NO_TASKS'])
+            noLbl = QLabel(conf.lang['NO_TASKS'])
             noLbl.setAlignment(Qt.AlignCenter)
             self.grid.addWidget(noLbl, 0, 0, 1, 5)
         else:
@@ -571,10 +628,10 @@ class EditWindow(QWidget):
                 row = {}
                 row['date'] = QLabel(datetime)
                 row['text'] = QLabel(text)
-                row['edit'] = QPushButton(language['EDIT'])
-                row['del'] = QPushButton(language['DELETE'])
-                row['edit'].setToolTip(language['EDIT_TOOLTIP_TEXT'])
-                row['del'].setToolTip(language['DELETE_TOOLTIP_TEXT'])
+                row['edit'] = QPushButton(conf.lang['EDIT'])
+                row['del'] = QPushButton(conf.lang['DELETE'])
+                row['edit'].setToolTip(conf.lang['EDIT_TOOLTIP_TEXT'])
+                row['del'].setToolTip(conf.lang['DELETE_TOOLTIP_TEXT'])
                 # pass k=i to lambda function to save value of i
                 row['edit'].clicked.connect(lambda checked, k=i: self.edit(k))
                 row['del'].clicked.connect(lambda checked, k=i: self.delete(k))
@@ -591,15 +648,15 @@ class EditWindow(QWidget):
 
     def edit(self, index):
         """ Open addWindow with selected task. """
-        self.parent.addActive = True
-        self.parent.showWindow('addAction')
-        addWindow = self.parent.addWindow
+        self.parentWindow.addActive = True
+        self.parentWindow.showWindow('addAction')
+        addWindow = self.parentWindow.addWindow
         addWindow.dateEdit.setText(dateToStr(tasks[index].
                                    getDateTime())['date'])
         addWindow.timeEdit.setText(dateToStr(tasks[index].
                                    getDateTime())['time'])
         addWindow.textEdit.setText(tasks[index].text)
-        addWindow.parent = self
+        addWindow.parentWindow = self
         # pass index parameter to notice it in addWindow
         addWindow.index = index
         self.window().hide()
@@ -613,7 +670,7 @@ class EditWindow(QWidget):
 
     def closeEvent(self, event):
         """ Closes window. """
-        self.parent.editActive = False
+        self.parentWindow.editActive = False
         event.ignore()
         self.scroll.hide()
         self.hide()
@@ -625,16 +682,58 @@ app = QApplication(sys.argv)
 app.setQuitOnLastWindowClosed(False)
 w = MainWindow()
 
-def lang_select(lang):
-    global language
+def reload():
     global w
-    language = langs[lang]
+    params = (w.addActive, w.addWindow, w.editActive, w.editWindow)
     w.quit(False)
     w = MainWindow()
     for l in w.lang:
-        w.lang[l].setChecked(True)
-    w.lang[lang].setChecked(True)
-    rewrite()
+        w.lang[l].setChecked(False)
+    w.lang[conf.lang['NAME']].setChecked(True)
+    rewriteConfig()
+    w.addActive, w.addWindow, w.editActive, w.editWindow = params
+    if w.editWindow:
+        w.editWindow.parentWindow = w
+        w.editWindow.scroll.hide()
+        w.editWindow.hide()
+        w.editWindow = None
+        if w.editActive:
+            w.editActive = False
+            w.showWindow('editAction')
+    if w.addWindow:
+        if w.addActive:
+            index = w.addWindow.index
+            date = w.addWindow.dateEdit.text()
+            time = w.addWindow.timeEdit.text()
+            text = w.addWindow.textEdit.toPlainText()
+        w.addWindow.hide()
+        if w.addActive:
+            w.addActive = False
+            if index != None:
+            w.showWindow('addAction')
+                w.addActive = False
+                w.editActive = False
+                w.showWindow('editAction')
+                w.addActive = True
+                w.editWindow.scroll.hide()
+                w.editWindow.hide()
+                w.addWindow.parentWindow = w.editWindow
+            w.addWindow.dateEdit.setText(date)
+            w.addWindow.timeEdit.setText(time)
+            w.addWindow.textEdit.setText(text)
+            w.addWindow.index = index
+
+# Trying to read config file.
+# If there's no config file, default config is loaded.
+try:
+    with open(config, 'r') as f:
+        conf.load(json.loads(f.readlines()[0]))
+    langSelect(conf.lang)
+except IOError:
+    pass
+except Exception as e:
+    errors.append(['{}\n{}'.format(conf.lang['SMTH_WRONG'], e),
+                       '{}'.format(e)])
 
 # Because of qt needs a widget to show message, errors are stored
 # in list. When the main widget is created, every error in list
@@ -645,17 +744,13 @@ if len(errors) > 0:
         error(w, err[0], err[1])
     exit()
 
-# Trying to read task list. If there's no file, task list is empty.
+# Trying to read task list.
+# If there's no tasks file, task list is empty.
 try:
     with open(filename, 'r') as f:
         lines = f.readlines()
         for line in lines:
             try:
-                if line[:5] == '#lang':
-                    lang = line[6:8]
-                    if lang in langs:
-                        lang_select(lang)
-                    continue
                 date, time, text = line.replace('\n', '').split('|')
                 text = text.split('\'')[1]
                 entry = Entry(date, time,
@@ -664,7 +759,11 @@ try:
             except:
                 pass
 except IOError:
-    tasks = []
+    pass
+except Exception as e:
+    errors.append(['{}\n{}'.format(conf.lang['SMTH_WRONG'], e),
+                       '{}'.format(e)])
+
 
 # Execute application
 sys.exit(app.exec_())
