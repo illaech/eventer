@@ -49,7 +49,7 @@ conf = Config(RU, 600)
 
 """ preliminary definitions """
 
-errors = []  # see line 729
+errors = []  # see line 739
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -186,9 +186,13 @@ class MainWindow(QWidget):
     timer : QTimer
         Timer that fires every second. If one reminder's time is up,
         shows message.
+    backupTimer : QTimer
+        Timer that fires every 10 minutes. Saves current state of
+        tasks file to backup file.
 
     """
     def __init__(self):
+        """ Init GUI and all required things. """
         super().__init__()
 
         self.tray = QSystemTrayIcon(QIcon('add.ico'), self)
@@ -304,10 +308,15 @@ class MainWindow(QWidget):
             return self.editWindow
 
     def backup(self):
+        """ Copies content of tasks file to backup file """
         with open(backup, 'w') as to_, open(filename, 'r') as from_:
             to_.write(from_.read())
 
     def restore(self):
+        """ Restores content of tasks file from backup file after
+        user confirmation.
+
+        """
         global tasks
         shure = QMessageBox.question(self, conf.lang.RESTORE,
                                      conf.lang.RESTORE_TEXT,
@@ -317,7 +326,7 @@ class MainWindow(QWidget):
         if shure == QMessageBox.No:
             pass
         else:
-            temp = open(backup).read()
+            temp = open(backup).read() # don't forget to read backup
             self.backup()
             with open(filename, 'w') as to_:
                 to_.write(temp)
@@ -325,11 +334,12 @@ class MainWindow(QWidget):
             readTasks()
             if self.editActive:
                 self.editWindow.fill()
-            
+
     def quit(self, really=True):
         """ Quits application. Hides tray icon firstly. """
         self.tray.hide()
         self.timer.stop()
+        self.backupTimer.stop()
         if really:
             QCoreApplication.instance().quit()
 
