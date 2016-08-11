@@ -1,11 +1,12 @@
 """ language definitions """
-names = ('name', 'cant_find_dir', 'unsupport_sys', 'cant_create_dir',
+allowed = ('name', 'cant_find_dir', 'unsupport_sys', 'cant_create_dir',
          'cant_open_file', 'error', 'add_action', 'edit_action', 'restore',
          'change_language', 'quit', 'task', 'close', 'repeat', 'add_title',
          'save', 'date', 'time', 'date_delim', 'time_delim', 'smth_wrong',
          'date_tooltip_text', 'time_tooltip_text', 'text_tooltip_text',
          'save_tooltip_text', 'close_tooltip_text', 'edit_title', 'edit',
-         'delete', 'edit_tooltip_text', 'delete_tooltip_text', 'no_tasks')
+         'delete', 'edit_tooltip_text', 'delete_tooltip_text', 'no_tasks',
+         'restore_text')
 
 ru_dict = {
     'NAME': 'RU',
@@ -93,13 +94,13 @@ class Language:
     def __init__(self, dic=None, **kwargs):
         if dic != None:
             for i in dic:
-                if i.lower() not in names:
-                    pass
+                if i.lower() not in allowed:
+                    print(i.lower())
                 else:
                     setattr(self, i.upper(), dic[i])
         if kwargs != None:
             for i in kwargs:
-                if i.lower() not in names:
+                if i.lower() not in allowed:
                     pass
                 else:
                     setattr(self, i.upper(), kwargs[i])
