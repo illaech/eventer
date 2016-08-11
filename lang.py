@@ -28,12 +28,14 @@ ru_dict = {
     'TIME': 'Время',
     'DATE_DELIM': '.',
     'TIME_DELIM': ':',
-    'DATE_TOOLTIP_TEXT': 'Формат даты: дд.мм.гггг<br/>Можно использовать' \
-                         ' сокращенные варианты: дд.мм.гг и дд.мм' \
-                         ' и "/" вместо точек',
-    'TIME_TOOLTIP_TEXT': 'Формат времени: чч:мм:сс<br/>Можно использовать' \
-                         ' сокращенные варианты: чч:мм и ч:мм' \
-                         ' и точки вместо двоеточий',
+    'DATE_TOOLTIP_TEXT': 'Используемые форматы дат:<br/><i>дд.мм.гггг</i>, ' \
+                         '<i>дд.мм.гг</i>, <i>дд.мм</i>.<br/>' \
+                         'Вместо <i>дд</i> и <i>мм</i> можно использовать' \
+                         ' <i>д</i> и <i>м</i>; а также "/" вместо точек',
+    'TIME_TOOLTIP_TEXT': 'Используемые форматы времени:<br/><i>чч:мм:сс</i>,' \
+                         ' <i>чч:мм</i>.<br/>Вместо <i>чч</i>, <i>мм</i> и ' \
+                         '<i>сс</i> можно использовать <i>ч</i>, <i>м</i> и ' \
+                         '<i>с</i>; а также точки вместо двоеточий',
     'TEXT_TOOLTIP_TEXT': 'Текст напоминания',
     'SAVE_TOOLTIP_TEXT': 'Сохранить напоминания',
     'CLOSE_TOOLTIP_TEXT': 'Закрыть окно без добавления задачи',
@@ -70,12 +72,16 @@ class Language:
     TIME = 'Time'
     DATE_DELIM = '/'
     TIME_DELIM = '.'
-    DATE_TOOLTIP_TEXT = 'Date format: dd/mm/yyyy<br/>You also can use' \
-                         ' short forms: dd/mm/yy and dd/mm,' \
-                         ' and dots instead of slashes'
-    TIME_TOOLTIP_TEXT = 'Time format: hh.mm.ss<br/>You also can use' \
-                         ' short forms: hh.mm and h.mm,' \
-                         ' and colons instead of dots'
+    DATE_TOOLTIP_TEXT = 'Appropriate date formats:<br/><i>dd/mm/yyyy</i>, ' \
+                        '<i>dd/mm/yy/</i>, and <i>dd/mm</i>.<br/>You also ' \
+                        'can use <i>d</i> and <i>m</i> instead of <i>dd</i>' \
+                        ' and <i>mm</i>.<br/>Also, you can use dots ' \
+                        'instead of slashes'
+    TIME_TOOLTIP_TEXT = 'Appropriate time formats:<br/><i>hh.mm.ss</i>, ' \
+                        '<i>hh.mm</i>.<br/>You also can use <i>h</i>, ' \
+                        '<i>m</i> and <i>s</i> instead of <i>hh</i>, ' \
+                        '<i>mm</i> and <i>ss</i>.<br/>Also, you can use ' \
+                        'colons instead of dots'
     TEXT_TOOLTIP_TEXT = 'Text of reminder'
     SAVE_TOOLTIP_TEXT = 'Save reminder'
     CLOSE_TOOLTIP_TEXT = 'Close the window and don\'t add new reminder'
