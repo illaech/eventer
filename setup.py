@@ -3,7 +3,7 @@ import py2exe
 
 setup(
     name='eventer',
-    version='1.70',
+    version='1.75',
     author='illaech',
     
     windows=[

@@ -6,7 +6,9 @@ allowed = ('name', 'cant_find_dir', 'unsupport_sys', 'cant_create_dir',
          'date_tooltip_text', 'time_tooltip_text', 'text_tooltip_text',
          'save_tooltip_text', 'close_tooltip_text', 'edit_title', 'edit',
          'delete', 'edit_tooltip_text', 'delete_tooltip_text', 'no_tasks',
-         'restore_text')
+         'restore_text', 'day_', 'dayd', 'days', 'dayf', 'hour_', 'hourd',
+         'hours', 'hourf', 'minute_', 'minuted', 'minutes', 'minutef',
+         'second_', 'secondd', 'seconds', 'secondf')
 
 ru_dict = {
     'NAME': 'RU',
@@ -21,7 +23,7 @@ ru_dict = {
     'QUIT': 'Выход',
     'TASK': 'Задача',
     'CLOSE': 'Закрыть',
-    'REPEAT': 'Повторить через 10 мин',
+    'REPEAT': 'Повторить через {}',
     'ADD_TITLE': 'Добавление задачи',
     'SAVE': 'Сохранить',
     'DATE': 'Дата',
@@ -49,7 +51,23 @@ ru_dict = {
     'RESTORE': 'Восстановить напоминания',
     'RESTORE_TEXT': 'Вы уверены, что хотите загрузить сохраненные ранее ' \
                     'напоминания?\nВернуть текущие задачи можно выбрав ' \
-                    'пункт меню "Восстановить напоминания" еще раз'
+                    'пункт меню "Восстановить напоминания" еще раз',
+    'DAY_': 'день',
+    'DAYD': 'день',
+    'DAYS': 'дней',
+    'DAYF': 'дня',
+    'HOUR_': 'час',
+    'HOURD': 'час',
+    'HOURS': 'часов',
+    'HOURF': 'часа',
+    'MINUTE_': 'минуту',
+    'MINUTED': 'минуту',
+    'MINUTES': 'минут',
+    'MINUTEF': 'минуты',
+    'SECOND_': 'секунду',
+    'SECONDD': 'секунду',
+    'SECONDS': 'секунд',
+    'SECONDF': 'секунды'
 }
 
 class Language:
@@ -65,7 +83,7 @@ class Language:
     QUIT = 'Quit'
     TASK = 'Reminder'
     CLOSE = 'Close'
-    REPEAT = 'Repeat after 10 min'
+    REPEAT = 'Repeat after {}'
     ADD_TITLE = 'Add new reminder'
     SAVE = 'Save'
     DATE = 'Date'
@@ -96,6 +114,22 @@ class Language:
     RESTORE_TEXT = 'Are you sure to load previously saved reminders?\n' \
                    'If you\'ll do so, you can roll back your reminders ' \
                    'by choosing that menu item again'
+    DAY_ = 'day' # 1
+    DAYD = 'days' # 21, 31, ...
+    DAYS = 'days' # 5, 6, ...
+    DAYF = 'days' # 2, 3, 4, 22, ...
+    HOUR_ = 'hour'
+    HOURD = 'hours'
+    HOURS = 'hours'
+    HOURF = 'hours'
+    MINUTE_ = 'minute'
+    MINUTED = 'minutes'
+    MINUTES = 'minutes'
+    MINUTEF = 'minutes'
+    SECOND_ = 'second'
+    SECONDD = 'seconds'
+    SECONDS = 'seconds'
+    SECONDF = 'seconds'
     
     def __init__(self, dic=None, **kwargs):
         if dic != None:

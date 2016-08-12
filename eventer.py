@@ -15,6 +15,66 @@ def langSelect(config, lang):
     config.lang = langs[lang]
     reload()
 
+def secondsToStr(num):
+    days = floor(num / 86400)
+    hours = floor(num % 86400 / 3600)
+    minutes = floor(num % 86400 % 3600 / 60)
+    seconds = floor(num % 86400 % 3600 % 60)
+
+    if int(days / 10) % 10 == 0 and days % 10 == 1:
+        days = '{} {}'.format(days, conf.lang.DAY_)
+    elif days % 10 > 1 and days % 10 < 5 and \
+        int(days / 10) % 10 == 0 or int(days / 10) % 10 > 1:
+        days = '{} {}'.format(days, conf.lang.DAYF)
+    elif days % 10 == 0 and int(days / 10) % 10 > 1:
+        days = '{} {}'.format(days, conf.lang.DAYD)
+    elif days != 0:
+        days = '{} {}'.format(days, conf.lang.DAYS)
+
+    if int(hours / 10) % 10 == 0 and hours % 10 == 1:
+        hours = '{} {}'.format(hours, conf.lang.HOUR_)
+    elif hours % 10 > 1 and hours % 10 < 5 and \
+        int(hours / 10) % 10 == 0 or int(hours / 10) % 10 > 1:
+        hours = '{} {}'.format(hours, conf.lang.HOURF)
+    elif hours % 10 == 0 and int(hours / 10) % 10 > 1:
+        hours = '{} {}'.format(hours, conf.lang.HOURD)
+    elif hours != 0:
+        hours = '{} {}'.format(hours, conf.lang.HOURS)
+
+    if int(minutes / 10) % 10 == 0 and minutes % 10 == 1:
+        minutes = '{} {}'.format(minutes, conf.lang.MINUTE_)
+    elif minutes % 10 > 1 and minutes % 10 < 5 and \
+        int(minutes / 10) % 10 == 0 or int(minutes / 10) % 10 > 1:
+        minutes = '{} {}'.format(minutes, conf.lang.MINUTEF)
+    elif minutes % 10 == 1 and int(minutes / 10) % 10 > 1:
+        minutes = '{} {}'.format(minutes, conf.lang.MINUTED)
+    elif minutes != 0:
+        minutes = '{} {}'.format(minutes, conf.lang.MINUTES)
+
+    if int(seconds / 10) % 10 == 0 and seconds % 10 == 1:
+        seconds = '{} {}'.format(seconds, conf.lang.SECOND_)
+    elif seconds % 10 > 1 and seconds % 10 < 5 and \
+        int(seconds / 10) % 10 == 0 or int(seconds / 10) % 10 > 1:
+        seconds = '{} {}'.format(seconds, conf.lang.SECONDF)
+    elif seconds % 10 == 1 and int(seconds / 10) % 10 > 1:
+        seconds = '{} {}'.format(seconds, conf.lang.SECONDD)
+    elif seconds != 0:
+        seconds = '{} {}'.format(seconds, conf.lang.SECONDS)
+
+    text = ''
+    text += days if days != 0 else ''
+    text += ', ' if (days != 0 and hours != 0 and minutes != 0
+           and seconds != 0) else ''
+    text += hours if hours != 0 else ''
+    text += ', ' if (hours != 0 and minutes != 0 and seconds != 0) else ''
+    text += minutes if minutes != 0 else ''
+    text += ', ' if (minutes != 0 and seconds != 0) else ''
+    text += seconds if seconds != 0 else ''
+
+    if text == '':
+        text = '{} {}'.format(seconds, conf.lang.SECONDS)
+    return text
+
 """ Config class """
 
 class Config:
@@ -256,16 +316,18 @@ class MainWindow(QWidget):
                 msgBox.setWindowIcon(QIcon('alert.ico'))
                 msgBox.setIcon(QMessageBox.Information)
                 # msgBox.setTextFormat(Qt.RichText)
-                msgBox.addButton(QPushButton(conf.lang.REPEAT),
-                                             QMessageBox.YesRole)
+                msgBox.addButton(QPushButton(conf.lang.REPEAT.format(
+                                             secondsToStr(conf.tdelta))),
+                                 QMessageBox.YesRole)
                 msgBox.addButton(QPushButton(conf.lang.CLOSE),
-                                             QMessageBox.NoRole)
+                                 QMessageBox.NoRole)
                 msgBox.setWindowFlags(Qt.WindowStaysOnTopHint)
                 reply = msgBox.exec_()
                 msgBox.raise_()
 
                 if reply == 0:
-                    date = dateToStr(dt.datetime.now() + dt.timedelta(0, 600))
+                    date = dateToStr(dt.datetime.now() + dt.timedelta(0,
+                                                                conf.tdelta))
                     date['date'] = date['date'].replace('/', '.')
                     date['time'] = date['time'].replace('.', ':')
                     tasks.append(Entry(date['date'], date['time'], entry.text))
