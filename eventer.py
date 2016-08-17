@@ -92,7 +92,7 @@ conf = Config(RU, 600)
 
 """ preliminary definitions """
 
-errors = []  # see line 739
+errors = []  # see line 836
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -226,10 +226,10 @@ class MainWindow(QWidget):
     tray : QSystemTrayIcon object
         Tray icon and all its attributes like context menu and
         activated action.
-    timer : QTimer
+    timer : QTimer object
         Timer that fires every second. If one reminder's time is up,
         shows message.
-    backupTimer : QTimer
+    backupTimer : QTimer object
         Timer that fires every 10 minutes. Saves current state of
         tasks file to backup file.
 
@@ -396,9 +396,9 @@ class AddWindow(QWidget):
     -----------------
     parentWindow : MainWindow object
         Parent of the window.
-    (date|time)Edit : QLineEdit
-    textEdit : QTextEdit
-    (save|close)Btn : QPushButton
+    (date|time)Edit : QLineEdit object
+    textEdit : QTextEdit object
+    (save|close)Btn : QPushButton object
         Widgets in the window.
 
     """
@@ -589,6 +589,12 @@ class EditWindow(QWidget):
         Such dictionary represents one element from tasks list.
     grid : QGridLayout object
         Layout of objects in QScrollArea.
+    activeTasks : list
+        List of visible tasks in grid.
+    filter : QHBoxLayout object
+        Layout of filter widgets.
+    (date|text)Field : QLineEdit object
+        Filter widgets.
 
     """
     def __init__(self, parent=None):
@@ -695,6 +701,7 @@ class EditWindow(QWidget):
         self.grid.setColumnStretch(1, 1)
 
     def filterApply(self):
+        """ Selects tasks to be shown. """
         date = self.dateField.text()
         text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
         text = text.lower()
