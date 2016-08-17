@@ -616,15 +616,31 @@ class EditWindow(QWidget):
     """
     def __init__(self, parent=None):
         super().__init__()
-        self.initUI()
         self.parentWindow = parent
         self.parentWindow.editActive = True
+        self.activeTasks = tasks
+        self.initUI()
 
     def initUI(self):
         """ Init user interface. """
+        vl = QVBoxLayout()
+        
         self.grid = QGridLayout()
-        self.setLayout(self.grid)
-
+        vl.addLayout(self.grid)
+        
+        self.filter = QHBoxLayout()        
+        self.dateField = QLineEdit()
+        self.textField = QLineEdit()
+        filterLbl = QLabel(conf.lang.FILTER)
+        filterLbl.setAlignment(Qt.AlignRight)
+        self.filter.addWidget(filterLbl)
+        self.filter.addWidget(self.dateField)
+        self.filter.addWidget(self.textField)
+        self.dateField.textChanged.connect(self.filterApply)
+        self.textField.textChanged.connect(self.filterApply)
+        vl.addLayout(self.filter)
+        
+        self.setLayout(vl)
         self.rows = []
         self.fill()
 
@@ -643,24 +659,24 @@ class EditWindow(QWidget):
     def fill(self):
         """ Fill self.scroll by items that represens tasks """
         # delete items from self.grid
-        for i in range(self.grid.count()):
+        for i in reversed(range(self.grid.count())):
             item = self.grid.itemAt(i)
-            if isinstance(item, QSpacerItem):
-                self.grid.removeItem(item)
-            else:
-                self.grid.itemAt(i).widget().close()
+            if not isinstance(item, QSpacerItem):
+                item.widget().close()
+            self.grid.removeItem(item)
 
-        self.rows = [{} for i in range(len(tasks))]
-        if len(tasks) == 0:
+        aTasks = self.activeTasks
+        self.rows = [{} for i in range(len(aTasks))]
+        if len(aTasks) == 0:
             noLbl = QLabel(conf.lang.NO_TASKS)
             noLbl.setAlignment(Qt.AlignCenter)
             self.grid.addWidget(noLbl, 0, 0, 1, 5)
         else:
-            for i in range(len(tasks)):
-                datetime = ' '.join((dateToStr(tasks[i].getDateTime())['date'],
-                                     dateToStr(tasks[i].getDateTime())['time']))
+            for i in range(len(aTasks)):
+                datetime = ' '.join((dateToStr(aTasks[i].getDateTime())['date'],
+                                     dateToStr(aTasks[i].getDateTime())['time']))
                 # replace newlines and tabs in text, cut in on 25 symbols
-                text = tasks[i].text.replace('\n', ' ').replace('\t', '   ')
+                text = aTasks[i].text.replace('\n', ' ').replace('\t', '   ')
                 text = text[:25] + '...' if len(text) > 25 else text
                 row = {}
                 row['date'] = QLabel(datetime)
@@ -681,8 +697,23 @@ class EditWindow(QWidget):
                 self.grid.addWidget(self.rows[i]['del'], i, 4)
         # add spacer to pin rows to window's top side
         spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
-        self.grid.addItem(spacer, len(tasks), 0, 1, 5)
+        self.grid.addItem(spacer, len(aTasks), 0, 1, 5)
 
+    def filterApply(self):
+        date = self.dateField.text()
+        text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
+        
+        aTasks = []
+        for i in tasks:
+            datetime = ' '.join((dateToStr(i.getDateTime())['date'],
+                                 dateToStr(i.getDateTime())['time']))
+            tasktext = i.text.replace('\n', ' ').replace('\t', '   ')
+            if datetime.find(date) > -1 and tasktext.find(text) > -1:
+                aTasks.append(i)
+        
+        self.activeTasks = aTasks
+        self.fill()
+        
     def edit(self, index):
         """ Open addWindow with selected task. """
         self.parentWindow.addActive = True

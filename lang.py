@@ -8,7 +8,7 @@ allowed = ('name', 'cant_find_dir', 'unsupport_sys', 'cant_create_dir',
          'delete', 'edit_tooltip_text', 'delete_tooltip_text', 'no_tasks',
          'restore_text', 'day_', 'dayd', 'days', 'dayf', 'hour_', 'hourd',
          'hours', 'hourf', 'minute_', 'minuted', 'minutes', 'minutef',
-         'second_', 'secondd', 'seconds', 'secondf')
+         'second_', 'secondd', 'seconds', 'secondf', 'filter')
 
 ru_dict = {
     'NAME': 'RU',
@@ -67,7 +67,8 @@ ru_dict = {
     'SECOND_': 'секунду',
     'SECONDD': 'секунду',
     'SECONDS': 'секунд',
-    'SECONDF': 'секунды'
+    'SECONDF': 'секунды',
+    'FILTER': 'Фильтр: '
 }
 
 class Language:
@@ -130,6 +131,7 @@ class Language:
     SECONDD = 'seconds'
     SECONDS = 'seconds'
     SECONDF = 'seconds'
+    FILTER = 'Filter: '
     
     def __init__(self, dic=None, **kwargs):
         if dic != None:
