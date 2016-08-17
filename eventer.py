@@ -15,51 +15,34 @@ def langSelect(config, lang):
     config.lang = langs[lang]
     reload()
 
+def getFormattedStrTime(time, t_, td, tf, ts):
+    if time == 0:
+        return 0
+    t_dec, t_uni = int(time / 10) % 10, time % 10
+    if t_dec == 0 and t_uni == 1:
+        frmtd = '{} {}'.format(time, t_)
+    elif t_dec > 1 and t_uni == 1:
+        frmtd = '{} {}'.format(time, td)
+    elif t_uni > 1 and t_uni < 5 and t_dec != 1:
+        frmtd = '{} {}'.format(time, tf)
+    else:
+        frmtd = '{} {}'.format(time, ts)
+    return frmtd
+    
 def secondsToStr(num):
     days = floor(num / 86400)
     hours = floor(num % 86400 / 3600)
     minutes = floor(num % 86400 % 3600 / 60)
     seconds = floor(num % 86400 % 3600 % 60)
-
-    if int(days / 10) % 10 == 0 and days % 10 == 1:
-        days = '{} {}'.format(days, conf.lang.DAY_)
-    elif days % 10 > 1 and days % 10 < 5 and \
-        int(days / 10) % 10 == 0 or int(days / 10) % 10 > 1:
-        days = '{} {}'.format(days, conf.lang.DAYF)
-    elif days % 10 == 0 and int(days / 10) % 10 > 1:
-        days = '{} {}'.format(days, conf.lang.DAYD)
-    elif days != 0:
-        days = '{} {}'.format(days, conf.lang.DAYS)
-
-    if int(hours / 10) % 10 == 0 and hours % 10 == 1:
-        hours = '{} {}'.format(hours, conf.lang.HOUR_)
-    elif hours % 10 > 1 and hours % 10 < 5 and \
-        int(hours / 10) % 10 == 0 or int(hours / 10) % 10 > 1:
-        hours = '{} {}'.format(hours, conf.lang.HOURF)
-    elif hours % 10 == 0 and int(hours / 10) % 10 > 1:
-        hours = '{} {}'.format(hours, conf.lang.HOURD)
-    elif hours != 0:
-        hours = '{} {}'.format(hours, conf.lang.HOURS)
-
-    if int(minutes / 10) % 10 == 0 and minutes % 10 == 1:
-        minutes = '{} {}'.format(minutes, conf.lang.MINUTE_)
-    elif minutes % 10 > 1 and minutes % 10 < 5 and \
-        int(minutes / 10) % 10 == 0 or int(minutes / 10) % 10 > 1:
-        minutes = '{} {}'.format(minutes, conf.lang.MINUTEF)
-    elif minutes % 10 == 1 and int(minutes / 10) % 10 > 1:
-        minutes = '{} {}'.format(minutes, conf.lang.MINUTED)
-    elif minutes != 0:
-        minutes = '{} {}'.format(minutes, conf.lang.MINUTES)
-
-    if int(seconds / 10) % 10 == 0 and seconds % 10 == 1:
-        seconds = '{} {}'.format(seconds, conf.lang.SECOND_)
-    elif seconds % 10 > 1 and seconds % 10 < 5 and \
-        int(seconds / 10) % 10 == 0 or int(seconds / 10) % 10 > 1:
-        seconds = '{} {}'.format(seconds, conf.lang.SECONDF)
-    elif seconds % 10 == 1 and int(seconds / 10) % 10 > 1:
-        seconds = '{} {}'.format(seconds, conf.lang.SECONDD)
-    elif seconds != 0:
-        seconds = '{} {}'.format(seconds, conf.lang.SECONDS)
+    
+    days = getFormattedStrTime(days, conf.lang.DAY_, conf.lang.DAYD,
+                               conf.lang.DAYF, conf.lang.DAYS)
+    hours = getFormattedStrTime(hours, conf.lang.HOUR_, conf.lang.HOURD,
+                                conf.lang.HOURF, conf.lang.HOURS)
+    minutes = getFormattedStrTime(minutes, conf.lang.MINUTE_, conf.lang.MINUTED,
+                                  conf.lang.MINUTEF, conf.lang.MINUTES)
+    seconds = getFormattedStrTime(seconds, conf.lang.SECOND_, conf.lang.SECONDD,
+                                  conf.lang.SECONDF, conf.lang.SECONDS)
 
     text = ''
     text += days if days != 0 else ''
@@ -698,6 +681,12 @@ class EditWindow(QWidget):
         # add spacer to pin rows to window's top side
         spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
         self.grid.addItem(spacer, len(aTasks), 0, 1, 5)
+        self.grid.setColumnMinimumWidth(0, 100)
+        self.grid.setColumnMinimumWidth(3, 80)
+        self.grid.setColumnMinimumWidth(4, 80)
+        for i in range(self.grid.columnCount()):
+            self.grid.setColumnStretch(i, 0)
+        self.grid.setColumnStretch(1, 1)
 
     def filterApply(self):
         date = self.dateField.text()
