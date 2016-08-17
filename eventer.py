@@ -609,10 +609,22 @@ class EditWindow(QWidget):
         self.dateField = QLineEdit()
         self.textField = QLineEdit()
         filterLbl = QLabel(conf.lang.FILTER)
-        filterLbl.setAlignment(Qt.AlignRight)
+        filterLbl.setStyleSheet('QLabel {' \
+                                        'border-width: 0 1px 0 0;' \
+                                        'border-style: solid;' \
+                                        'border-color: black;' \
+                                        'margin: 0 5px 0 0;' \
+                                       '}')
         self.filter.addWidget(filterLbl)
+
+        dateLbl = QLabel(conf.lang.DATE_F)
+        self.filter.addWidget(dateLbl)
         self.filter.addWidget(self.dateField)
+
+        textLbl = QLabel(conf.lang.TEXT_F)
+        self.filter.addWidget(textLbl)
         self.filter.addWidget(self.textField)
+
         self.dateField.textChanged.connect(self.filterApply)
         self.textField.textChanged.connect(self.filterApply)
         vl.addLayout(self.filter)
