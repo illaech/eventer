@@ -685,12 +685,14 @@ class EditWindow(QWidget):
     def filterApply(self):
         date = self.dateField.text()
         text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
+        text = text.lower()
 
         aTasks = []
         for i in tasks:
             datetime = ' '.join((dateToStr(i.getDateTime())['date'],
                                  dateToStr(i.getDateTime())['time']))
             tasktext = i.text.replace('\n', ' ').replace('\t', '   ')
+            tasktext = tasktext.lower()
             if datetime.find(date) > -1 and tasktext.find(text) > -1:
                 aTasks.append(i)
 
