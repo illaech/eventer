@@ -28,13 +28,13 @@ def getFormattedStrTime(time, t_, td, tf, ts):
     else:
         frmtd = '{} {}'.format(time, ts)
     return frmtd
-    
+
 def secondsToStr(num):
     days = floor(num / 86400)
     hours = floor(num % 86400 / 3600)
     minutes = floor(num % 86400 % 3600 / 60)
     seconds = floor(num % 86400 % 3600 % 60)
-    
+
     days = getFormattedStrTime(days, conf.lang.DAY_, conf.lang.DAYD,
                                conf.lang.DAYF, conf.lang.DAYS)
     hours = getFormattedStrTime(hours, conf.lang.HOUR_, conf.lang.HOURD,
@@ -557,22 +557,16 @@ class AddWindow(QWidget):
         entry = Entry(date, time, text)
         tasks.append(entry)
         rewrite()
-        if self.index != None: # if addWindow is called from editWindow
-            self.parentWindow.show()
-            self.parentWindow.window().show()
-            self.parentWindow.scroll.show()
-            self.parentWindow.fill()
         self.closeEvent(QCloseEvent())
 
     def closeEvent(self, event):
         """ Closes window. """
         event.ignore()
         if self.index != None:
-            self.parentWindow.show()
-            self.parentWindow.window().show()
-            self.parentWindow.scroll.show()
-            self.parentWindow.fill()
             self.parentWindow.parentWindow.addActive = False
+            self.parentWindow.show()
+            self.parentWindow.scroll.show()
+            self.parentWindow.filterApply()
         else:
             self.parentWindow.addActive = False
         self.hide()
@@ -607,11 +601,11 @@ class EditWindow(QWidget):
     def initUI(self):
         """ Init user interface. """
         vl = QVBoxLayout()
-        
+
         self.grid = QGridLayout()
         vl.addLayout(self.grid)
-        
-        self.filter = QHBoxLayout()        
+
+        self.filter = QHBoxLayout()
         self.dateField = QLineEdit()
         self.textField = QLineEdit()
         filterLbl = QLabel(conf.lang.FILTER)
@@ -622,7 +616,7 @@ class EditWindow(QWidget):
         self.dateField.textChanged.connect(self.filterApply)
         self.textField.textChanged.connect(self.filterApply)
         vl.addLayout(self.filter)
-        
+
         self.setLayout(vl)
         self.rows = []
         self.fill()
@@ -691,7 +685,7 @@ class EditWindow(QWidget):
     def filterApply(self):
         date = self.dateField.text()
         text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
-        
+
         aTasks = []
         for i in tasks:
             datetime = ' '.join((dateToStr(i.getDateTime())['date'],
@@ -699,10 +693,10 @@ class EditWindow(QWidget):
             tasktext = i.text.replace('\n', ' ').replace('\t', '   ')
             if datetime.find(date) > -1 and tasktext.find(text) > -1:
                 aTasks.append(i)
-        
+
         self.activeTasks = aTasks
         self.fill()
-        
+
     def edit(self, index):
         """ Open addWindow with selected task. """
         self.parentWindow.addActive = True
