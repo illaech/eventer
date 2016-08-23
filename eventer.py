@@ -658,13 +658,14 @@ class EditWindow(QWidget):
 
         self.setLayout(vl)
         self.rows = []
-        self.fill()
 
         self.taskArea = QScrollArea(self)
         self.taskArea.setWidget(self.topWidget)
         self.taskArea.setWidgetResizable(True)
         self.taskArea.resize(500, 350)
         self.resize(500, 395)
+        self.setMinimumSize(460, 90)
+        self.fill()
         self.show()
         self.move(QApplication.desktop().screen().rect().center() -
                   self.rect().center())
@@ -693,12 +694,16 @@ class EditWindow(QWidget):
             for i in range(len(aTasks)):
                 datetime = ' '.join((dateToStr(aTasks[i].getDateTime())['date'],
                                      dateToStr(aTasks[i].getDateTime())['time']))
-                # replace newlines and tabs in text, cut in on 25 symbols
+                # replace newlines and tabs in text
                 text = aTasks[i].text.replace('\n', ' ').replace('\t', '   ')
-                text = text[:25] + '...' if len(text) > 25 else text
                 row = {}
                 row['date'] = QLabel(datetime)
-                row['text'] = QLabel(text)
+                row['text'] = QLabel()
+                # change label's resizeEvent
+                # with passing QLabel and text
+                row['text'].resizeEvent = \
+                            lambda evt, lbl=row['text'], txt=text: \
+                                   self.labelResize(lbl, evt, txt)
                 row['edit'] = QPushButton(conf.lang.EDIT)
                 row['del'] = QPushButton(conf.lang.DELETE)
                 row['edit'].setToolTip(conf.lang.EDIT_TOOLTIP_TEXT)
@@ -723,6 +728,16 @@ class EditWindow(QWidget):
             self.grid.setColumnStretch(i, 0)
         self.grid.setColumnStretch(1, 1)
 
+    def labelResize(self, label, event, text):
+        """ if calculate width as at next line
+        width = event.size().width()
+        resizing will stop when full text is shown in label
+        """
+        width = self.taskArea.width() - 320
+        metrics = QFontMetrics(label.font())
+        ellipsis = metrics.elidedText(text, Qt.ElideRight, width)
+        label.setText(ellipsis)
+        
     def filterApply(self):
         """ Selects tasks to be shown. """
         date = self.dateField.text()
@@ -763,6 +778,11 @@ class EditWindow(QWidget):
         rewrite()
         self.fill()
 
+    def resizeEvent(self, event):
+        width = event.size().width()
+        height = self.size().height()
+        self.taskArea.resize(width, height - 45)
+        
     def closeEvent(self, event):
         """ Closes window. """
         self.parentWindow.editActive = False
