@@ -98,7 +98,7 @@ conf = Config(RU, 600, True)
 
 """ preliminary definitions """
 
-errors = []  # see line 836
+errors = []  # see line 906
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -608,55 +608,30 @@ class EditWindow(QWidget):
         self.parentWindow = parent
         self.parentWindow.editActive = True
         self.activeTasks = tasks
+        self.dateFieldText = ''
+        self.textFieldText = ''
         self.initUI()
 
     def initUI(self):
         """ Init user interface. """
-        vl = QVBoxLayout()
+        # use QVBoxLayout to store two layouts vertically
+        self.vl = QVBoxLayout()
 
+        # widget for scrollArea
         self.topWidget = QWidget()
-        self.topWidget.resize(500, 350)
         self.grid = QGridLayout()
         self.topWidget.setLayout(self.grid)
-        vl.addWidget(self.topWidget)
+        self.vl.addWidget(self.topWidget)
 
+        # layout for filter
         self.filter = QHBoxLayout()
-        self.hideBtn = QPushButton()
-        if conf.filter:
-            self.hideBtn.setText(conf.lang.VISIBLE_F)
-            self.hideBtn.setFixedSize(23, 23)
-        else:
-            self.hideBtn.setText(conf.lang.HIDDEN_F)
-            self.hideBtn.setFixedSize(23, 15)
-        self.hideBtn.clicked.connect(self.inverseFilter)
-        self.filter.addWidget(self.hideBtn)
-        if conf.filter:
-            filterLbl = QLabel(conf.lang.FILTER)
-            filterLbl.setStyleSheet('QLabel {' \
-                                            'border-width: 0 1px 0 0;' \
-                                            'border-style: solid;' \
-                                            'border-color: black;' \
-                                            'margin: 0 5px 0 0;' \
-                                           '}')
-            self.filter.addWidget(filterLbl)
-
-            dateLbl = QLabel(conf.lang.DATE_F)
-            self.filter.addWidget(dateLbl)
-            self.dateField = QLineEdit()
-            self.filter.addWidget(self.dateField)
-
-            textLbl = QLabel(conf.lang.TEXT_F)
-            self.filter.addWidget(textLbl)
-            self.textField = QLineEdit()
-            self.filter.addWidget(self.textField)
-
-            self.dateField.textChanged.connect(self.filterApply)
-            self.textField.textChanged.connect(self.filterApply)
+        # draw filter widgets
+        self.drawFilter()
         spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
-        vl.addItem(spacer)
-        vl.addLayout(self.filter)
+        self.vl.addItem(spacer)
+        self.vl.addLayout(self.filter)
 
-        self.setLayout(vl)
+        self.setLayout(self.vl)
         self.rows = []
 
         self.taskArea = QScrollArea(self)
@@ -672,17 +647,69 @@ class EditWindow(QWidget):
         self.setWindowTitle(conf.lang.EDIT_TITLE)
         self.setWindowIcon(QIcon('edit.ico'))
 
-    def inverseFilter(self):
-        conf.filter = not conf.filter
-        
-    def fill(self):
-        """ Fill self.taskArea by items that represens tasks """
-        # delete items from self.grid
-        for i in reversed(range(self.grid.count())):
-            item = self.grid.itemAt(i)
+    def clearLayout(self, layout):
+        """ Removes all widgets from specific layout. """
+        for i in reversed(range(layout.count())):
+            item = layout.itemAt(i)
             if not isinstance(item, QSpacerItem):
                 item.widget().close()
-            self.grid.removeItem(item)
+            layout.removeItem(item)
+
+    def drawFilter(self):
+        """ Draws filter widgets. """
+        self.clearLayout(self.filter)
+
+        self.hideBtn = QPushButton()
+        if conf.filter:
+            self.hideBtn.setText(conf.lang.VISIBLE_F)
+            self.hideBtn.setFixedSize(23, 23)
+            self.vl.setContentsMargins(11, 11, 11, 11)
+        else:
+            self.hideBtn.setText(conf.lang.HIDDEN_F)
+            self.hideBtn.setFixedSize(23, 15)
+            self.vl.setContentsMargins(0, 0, 0, 0)
+        self.hideBtn.clicked.connect(self.inverseFilter)
+        self.filter.addWidget(self.hideBtn)
+        if conf.filter:
+            filterLbl = QLabel(conf.lang.FILTER)
+            filterLbl.setStyleSheet('QLabel {' \
+                                            'border-width: 0 1px 0 0;' \
+                                            'border-style: solid;' \
+                                            'border-color: black;' \
+                                            'margin: 0 5px 0 0;' \
+                                           '}')
+            self.filter.addWidget(filterLbl)
+
+            dateLbl = QLabel(conf.lang.DATE_F)
+            self.filter.addWidget(dateLbl)
+            self.dateField = QLineEdit()
+            self.dateField.setText(self.dateFieldText)
+            self.filter.addWidget(self.dateField)
+
+            textLbl = QLabel(conf.lang.TEXT_F)
+            self.filter.addWidget(textLbl)
+            self.textField = QLineEdit()
+            self.textField.setText(self.textFieldText)
+            self.filter.addWidget(self.textField)
+
+            self.dateField.textChanged.connect(self.filterApply)
+            self.textField.textChanged.connect(self.filterApply)
+
+    def inverseFilter(self):
+        """ Change state of filter. """
+        conf.filter = not conf.filter
+        rewriteConfig()
+        if not conf.filter:
+            self.dateFieldText = self.dateField.text()
+            self.textFieldText = self.textField.text()
+        self.drawFilter()
+        self.resizeEvent(QResizeEvent(QSize(self.width(), self.height()),
+                                      QSize(self.width(), self.height())))
+
+    def fill(self):
+        """ Fill self.taskArea by items that represens tasks. """
+        # delete items from self.grid
+        self.clearLayout(self.grid)
 
         aTasks = self.activeTasks
         self.rows = [{} for i in range(len(aTasks))]
@@ -729,15 +756,14 @@ class EditWindow(QWidget):
         self.grid.setColumnStretch(1, 1)
 
     def labelResize(self, label, event, text):
-        """ if calculate width as at next line
-        width = event.size().width()
-        resizing will stop when full text is shown in label
-        """
+        """ Change label's text due to its size. """
         width = self.taskArea.width() - 320
+        # if get width from event: width = event.size().width()
+        # resizing will stop when full text is shown in label
         metrics = QFontMetrics(label.font())
         ellipsis = metrics.elidedText(text, Qt.ElideRight, width)
         label.setText(ellipsis)
-        
+
     def filterApply(self):
         """ Selects tasks to be shown. """
         date = self.dateField.text()
@@ -772,17 +798,21 @@ class EditWindow(QWidget):
         self.hide()
 
     def delete(self, index):
-        """ Delete selected reminder from tasks list """
+        """ Delete selected reminder from tasks list. """
         entry = tasks[index]
         tasks.remove(entry)
         rewrite()
         self.fill()
 
     def resizeEvent(self, event):
+        """ Resize taskArea due to size of window. """
         width = event.size().width()
         height = self.size().height()
-        self.taskArea.resize(width, height - 45)
-        
+        if conf.filter:
+            self.taskArea.resize(width, height - 45)
+        else:
+            self.taskArea.resize(width, height - 15)
+
     def closeEvent(self, event):
         """ Closes window. """
         self.parentWindow.editActive = False
