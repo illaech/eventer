@@ -9,7 +9,7 @@ allowed = ('name', 'cant_find_dir', 'unsupport_sys', 'cant_create_dir',
          'restore_text', 'day_', 'dayd', 'days', 'dayf', 'hour_', 'hourd',
          'hours', 'hourf', 'minute_', 'minuted', 'minutes', 'minutef',
          'second_', 'secondd', 'seconds', 'secondf', 'filter', 'date_f',
-         'text_f')
+         'text_f', 'hidden_f', 'visible_f')
 
 ru_dict = {
     'NAME': 'RU',
@@ -137,6 +137,8 @@ class Language:
     FILTER = 'Filter'
     DATE_F = 'Date:'
     TEXT_F = 'Text:'
+    VISIBLE_F = '˅'
+    HIDDEN_F = '˄'
     
     def __init__(self, dic=None, **kwargs):
         if dic != None:

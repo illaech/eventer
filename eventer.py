@@ -61,16 +61,22 @@ def secondsToStr(num):
 """ Config class """
 
 class Config:
-    supported = ('lang', 'tdelta')
+    supported = ('lang', 'tdelta', 'filter')
     lang = None
     tdelta = None
+    filter = None
 
-    def __init__(self, lang=RU, tdelta=600):
+    def __init__(self, lang=RU, tdelta=600, filter=True):
         self.lang = lang
         self.tdelta = tdelta
+        self.filter = filter
 
     def __str__(self):
-        dic = {'lang': str(self.lang), 'tdelta': self.tdelta}
+        dic = {
+            'lang': str(self.lang),
+            'tdelta': self.tdelta,
+            'filter': self.filter
+        }
         return json.dumps(dic)
 
     def load(self, dic):
@@ -88,7 +94,7 @@ class Config:
             errors.append(['{} "{}"'.format(conf.lang['CANT_OPEN_FILE'], f),
                            'IOError: Can\'t open file!'])
 
-conf = Config(RU, 600)
+conf = Config(RU, 600, True)
 
 """ preliminary definitions """
 
@@ -277,9 +283,10 @@ class MainWindow(QWidget):
         self.timer.timeout.connect(self.timerTick)
         self.timer.start(1000)
 
+        self.backup()
         self.backupTimer = QTimer()
         self.backupTimer.timeout.connect(self.backup)
-        self.backupTimer.start(600000)
+        self.backupTimer.start(300000)
 
     def timerTick(self):
         """ Checks tasks entry's time if it is up. Shows message with
@@ -565,7 +572,6 @@ class AddWindow(QWidget):
         if self.index != None:
             self.parentWindow.parentWindow.addActive = False
             self.parentWindow.show()
-            self.parentWindow.scroll.show()
             self.parentWindow.filterApply()
         else:
             self.parentWindow.addActive = False
@@ -579,7 +585,7 @@ class EditWindow(QWidget):
     -----------------
     parentWindow : MainWindow object
         Parent of the window.
-    scroll : QScrollArea object
+    taskArea : QScrollArea object
         Scroll area of window.
     rows : list of dictionaries
         Element of rows is a dictionary:
@@ -608,51 +614,68 @@ class EditWindow(QWidget):
         """ Init user interface. """
         vl = QVBoxLayout()
 
+        self.topWidget = QWidget()
+        self.topWidget.resize(500, 350)
         self.grid = QGridLayout()
-        vl.addLayout(self.grid)
+        self.topWidget.setLayout(self.grid)
+        vl.addWidget(self.topWidget)
 
         self.filter = QHBoxLayout()
-        self.dateField = QLineEdit()
-        self.textField = QLineEdit()
-        filterLbl = QLabel(conf.lang.FILTER)
-        filterLbl.setStyleSheet('QLabel {' \
-                                        'border-width: 0 1px 0 0;' \
-                                        'border-style: solid;' \
-                                        'border-color: black;' \
-                                        'margin: 0 5px 0 0;' \
-                                       '}')
-        self.filter.addWidget(filterLbl)
+        self.hideBtn = QPushButton()
+        if conf.filter:
+            self.hideBtn.setText(conf.lang.VISIBLE_F)
+            self.hideBtn.setFixedSize(23, 23)
+        else:
+            self.hideBtn.setText(conf.lang.HIDDEN_F)
+            self.hideBtn.setFixedSize(23, 15)
+        self.hideBtn.clicked.connect(self.inverseFilter)
+        self.filter.addWidget(self.hideBtn)
+        if conf.filter:
+            filterLbl = QLabel(conf.lang.FILTER)
+            filterLbl.setStyleSheet('QLabel {' \
+                                            'border-width: 0 1px 0 0;' \
+                                            'border-style: solid;' \
+                                            'border-color: black;' \
+                                            'margin: 0 5px 0 0;' \
+                                           '}')
+            self.filter.addWidget(filterLbl)
 
-        dateLbl = QLabel(conf.lang.DATE_F)
-        self.filter.addWidget(dateLbl)
-        self.filter.addWidget(self.dateField)
+            dateLbl = QLabel(conf.lang.DATE_F)
+            self.filter.addWidget(dateLbl)
+            self.dateField = QLineEdit()
+            self.filter.addWidget(self.dateField)
 
-        textLbl = QLabel(conf.lang.TEXT_F)
-        self.filter.addWidget(textLbl)
-        self.filter.addWidget(self.textField)
+            textLbl = QLabel(conf.lang.TEXT_F)
+            self.filter.addWidget(textLbl)
+            self.textField = QLineEdit()
+            self.filter.addWidget(self.textField)
 
-        self.dateField.textChanged.connect(self.filterApply)
-        self.textField.textChanged.connect(self.filterApply)
+            self.dateField.textChanged.connect(self.filterApply)
+            self.textField.textChanged.connect(self.filterApply)
+        spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
+        vl.addItem(spacer)
         vl.addLayout(self.filter)
 
         self.setLayout(vl)
         self.rows = []
         self.fill()
 
-        self.scroll = QScrollArea()
-        self.scroll.setWidget(self)
-        self.scroll.setWidgetResizable(True)
-        self.scroll.resize(500, 350)
-        self.scroll.show()
-        self.scroll.move(QApplication.desktop().screen().rect().center() -
-                         self.rect().center())
-        self.scroll.setWindowTitle(conf.lang.EDIT_TITLE)
-        self.scroll.setWindowIcon(QIcon('edit.ico'))
-        self.scroll.closeEvent = self.closeEvent
-        self.scroll.mousePressEvent = self.mousePressEvent
+        self.taskArea = QScrollArea(self)
+        self.taskArea.setWidget(self.topWidget)
+        self.taskArea.setWidgetResizable(True)
+        self.taskArea.resize(500, 350)
+        self.resize(500, 395)
+        self.show()
+        self.move(QApplication.desktop().screen().rect().center() -
+                  self.rect().center())
+        self.setWindowTitle(conf.lang.EDIT_TITLE)
+        self.setWindowIcon(QIcon('edit.ico'))
 
+    def inverseFilter(self):
+        conf.filter = not conf.filter
+        
     def fill(self):
-        """ Fill self.scroll by items that represens tasks """
+        """ Fill self.taskArea by items that represens tasks """
         # delete items from self.grid
         for i in reversed(range(self.grid.count())):
             item = self.grid.itemAt(i)
@@ -731,7 +754,7 @@ class EditWindow(QWidget):
         addWindow.parentWindow = self
         # pass index parameter to notice it in addWindow
         addWindow.index = index
-        self.window().hide()
+        self.hide()
 
     def delete(self, index):
         """ Delete selected reminder from tasks list """
@@ -744,7 +767,6 @@ class EditWindow(QWidget):
         """ Closes window. """
         self.parentWindow.editActive = False
         event.ignore()
-        self.scroll.hide()
         self.hide()
 
 
@@ -767,7 +789,6 @@ def reload():
     w.addActive, w.addWindow, w.editActive, w.editWindow = params
     if w.editWindow:
         w.editWindow.parentWindow = w
-        w.editWindow.scroll.hide()
         w.editWindow.hide()
         w.editWindow = None
         if w.editActive:
@@ -788,7 +809,6 @@ def reload():
                 w.editActive = False
                 w.showWindow('editAction')
                 w.addActive = True
-                w.editWindow.scroll.hide()
                 w.editWindow.hide()
                 w.addWindow.parentWindow = w.editWindow
             w.addWindow.dateEdit.setText(date)
