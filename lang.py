@@ -8,7 +8,8 @@ allowed = ('name', 'cant_find_dir', 'unsupport_sys', 'cant_create_dir',
          'delete', 'edit_tooltip_text', 'delete_tooltip_text', 'no_tasks',
          'restore_text', 'day_', 'dayd', 'days', 'dayf', 'hour_', 'hourd',
          'hours', 'hourf', 'minute_', 'minuted', 'minutes', 'minutef',
-         'second_', 'secondd', 'seconds', 'secondf')
+         'second_', 'secondd', 'seconds', 'secondf', 'filter', 'date_f',
+         'text_f', 'hidden_f', 'visible_f')
 
 ru_dict = {
     'NAME': 'RU',
@@ -67,7 +68,10 @@ ru_dict = {
     'SECOND_': 'секунду',
     'SECONDD': 'секунду',
     'SECONDS': 'секунд',
-    'SECONDF': 'секунды'
+    'SECONDF': 'секунды',
+    'FILTER': 'Фильтр',
+    'TEXT_F': 'Текст:',
+    'DATE_F': 'Дата:'
 }
 
 class Language:
@@ -114,7 +118,7 @@ class Language:
     RESTORE_TEXT = 'Are you sure to load previously saved reminders?\n' \
                    'If you\'ll do so, you can roll back your reminders ' \
                    'by choosing that menu item again'
-    DAY_ = 'day' # 1
+    DAY_ = 'day'  # 1
     DAYD = 'days' # 21, 31, ...
     DAYS = 'days' # 5, 6, ...
     DAYF = 'days' # 2, 3, 4, 22, ...
@@ -130,6 +134,11 @@ class Language:
     SECONDD = 'seconds'
     SECONDS = 'seconds'
     SECONDF = 'seconds'
+    FILTER = 'Filter'
+    DATE_F = 'Date:'
+    TEXT_F = 'Text:'
+    VISIBLE_F = '˅'
+    HIDDEN_F = '˄'
     
     def __init__(self, dic=None, **kwargs):
         if dic != None:

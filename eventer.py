@@ -15,51 +15,34 @@ def langSelect(config, lang):
     config.lang = langs[lang]
     reload()
 
+def getFormattedStrTime(time, t_, td, tf, ts):
+    if time == 0:
+        return 0
+    t_dec, t_uni = int(time / 10) % 10, time % 10
+    if t_dec == 0 and t_uni == 1:
+        frmtd = '{} {}'.format(time, t_)
+    elif t_dec > 1 and t_uni == 1:
+        frmtd = '{} {}'.format(time, td)
+    elif t_uni > 1 and t_uni < 5 and t_dec != 1:
+        frmtd = '{} {}'.format(time, tf)
+    else:
+        frmtd = '{} {}'.format(time, ts)
+    return frmtd
+
 def secondsToStr(num):
     days = floor(num / 86400)
     hours = floor(num % 86400 / 3600)
     minutes = floor(num % 86400 % 3600 / 60)
     seconds = floor(num % 86400 % 3600 % 60)
 
-    if int(days / 10) % 10 == 0 and days % 10 == 1:
-        days = '{} {}'.format(days, conf.lang.DAY_)
-    elif days % 10 > 1 and days % 10 < 5 and \
-        int(days / 10) % 10 == 0 or int(days / 10) % 10 > 1:
-        days = '{} {}'.format(days, conf.lang.DAYF)
-    elif days % 10 == 0 and int(days / 10) % 10 > 1:
-        days = '{} {}'.format(days, conf.lang.DAYD)
-    elif days != 0:
-        days = '{} {}'.format(days, conf.lang.DAYS)
-
-    if int(hours / 10) % 10 == 0 and hours % 10 == 1:
-        hours = '{} {}'.format(hours, conf.lang.HOUR_)
-    elif hours % 10 > 1 and hours % 10 < 5 and \
-        int(hours / 10) % 10 == 0 or int(hours / 10) % 10 > 1:
-        hours = '{} {}'.format(hours, conf.lang.HOURF)
-    elif hours % 10 == 0 and int(hours / 10) % 10 > 1:
-        hours = '{} {}'.format(hours, conf.lang.HOURD)
-    elif hours != 0:
-        hours = '{} {}'.format(hours, conf.lang.HOURS)
-
-    if int(minutes / 10) % 10 == 0 and minutes % 10 == 1:
-        minutes = '{} {}'.format(minutes, conf.lang.MINUTE_)
-    elif minutes % 10 > 1 and minutes % 10 < 5 and \
-        int(minutes / 10) % 10 == 0 or int(minutes / 10) % 10 > 1:
-        minutes = '{} {}'.format(minutes, conf.lang.MINUTEF)
-    elif minutes % 10 == 1 and int(minutes / 10) % 10 > 1:
-        minutes = '{} {}'.format(minutes, conf.lang.MINUTED)
-    elif minutes != 0:
-        minutes = '{} {}'.format(minutes, conf.lang.MINUTES)
-
-    if int(seconds / 10) % 10 == 0 and seconds % 10 == 1:
-        seconds = '{} {}'.format(seconds, conf.lang.SECOND_)
-    elif seconds % 10 > 1 and seconds % 10 < 5 and \
-        int(seconds / 10) % 10 == 0 or int(seconds / 10) % 10 > 1:
-        seconds = '{} {}'.format(seconds, conf.lang.SECONDF)
-    elif seconds % 10 == 1 and int(seconds / 10) % 10 > 1:
-        seconds = '{} {}'.format(seconds, conf.lang.SECONDD)
-    elif seconds != 0:
-        seconds = '{} {}'.format(seconds, conf.lang.SECONDS)
+    days = getFormattedStrTime(days, conf.lang.DAY_, conf.lang.DAYD,
+                               conf.lang.DAYF, conf.lang.DAYS)
+    hours = getFormattedStrTime(hours, conf.lang.HOUR_, conf.lang.HOURD,
+                                conf.lang.HOURF, conf.lang.HOURS)
+    minutes = getFormattedStrTime(minutes, conf.lang.MINUTE_, conf.lang.MINUTED,
+                                  conf.lang.MINUTEF, conf.lang.MINUTES)
+    seconds = getFormattedStrTime(seconds, conf.lang.SECOND_, conf.lang.SECONDD,
+                                  conf.lang.SECONDF, conf.lang.SECONDS)
 
     text = ''
     text += days if days != 0 else ''
@@ -78,16 +61,22 @@ def secondsToStr(num):
 """ Config class """
 
 class Config:
-    supported = ('lang', 'tdelta')
+    supported = ('lang', 'tdelta', 'filter')
     lang = None
     tdelta = None
+    filter = None
 
-    def __init__(self, lang=RU, tdelta=600):
+    def __init__(self, lang=RU, tdelta=600, filter=True):
         self.lang = lang
         self.tdelta = tdelta
+        self.filter = filter
 
     def __str__(self):
-        dic = {'lang': str(self.lang), 'tdelta': self.tdelta}
+        dic = {
+            'lang': str(self.lang),
+            'tdelta': self.tdelta,
+            'filter': self.filter
+        }
         return json.dumps(dic)
 
     def load(self, dic):
@@ -105,11 +94,11 @@ class Config:
             errors.append(['{} "{}"'.format(conf.lang['CANT_OPEN_FILE'], f),
                            'IOError: Can\'t open file!'])
 
-conf = Config(RU, 600)
+conf = Config(RU, 600, True)
 
 """ preliminary definitions """
 
-errors = []  # see line 739
+errors = []  # see line 906
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -243,10 +232,10 @@ class MainWindow(QWidget):
     tray : QSystemTrayIcon object
         Tray icon and all its attributes like context menu and
         activated action.
-    timer : QTimer
+    timer : QTimer object
         Timer that fires every second. If one reminder's time is up,
         shows message.
-    backupTimer : QTimer
+    backupTimer : QTimer object
         Timer that fires every 10 minutes. Saves current state of
         tasks file to backup file.
 
@@ -294,9 +283,10 @@ class MainWindow(QWidget):
         self.timer.timeout.connect(self.timerTick)
         self.timer.start(1000)
 
+        self.backup()
         self.backupTimer = QTimer()
         self.backupTimer.timeout.connect(self.backup)
-        self.backupTimer.start(600000)
+        self.backupTimer.start(300000)
 
     def timerTick(self):
         """ Checks tasks entry's time if it is up. Shows message with
@@ -413,9 +403,9 @@ class AddWindow(QWidget):
     -----------------
     parentWindow : MainWindow object
         Parent of the window.
-    (date|time)Edit : QLineEdit
-    textEdit : QTextEdit
-    (save|close)Btn : QPushButton
+    (date|time)Edit : QLineEdit object
+    textEdit : QTextEdit object
+    (save|close)Btn : QPushButton object
         Widgets in the window.
 
     """
@@ -574,22 +564,15 @@ class AddWindow(QWidget):
         entry = Entry(date, time, text)
         tasks.append(entry)
         rewrite()
-        if self.index != None: # if addWindow is called from editWindow
-            self.parentWindow.show()
-            self.parentWindow.window().show()
-            self.parentWindow.scroll.show()
-            self.parentWindow.fill()
         self.closeEvent(QCloseEvent())
 
     def closeEvent(self, event):
         """ Closes window. """
         event.ignore()
         if self.index != None:
-            self.parentWindow.show()
-            self.parentWindow.window().show()
-            self.parentWindow.scroll.show()
-            self.parentWindow.fill()
             self.parentWindow.parentWindow.addActive = False
+            self.parentWindow.show()
+            self.parentWindow.filterApply()
         else:
             self.parentWindow.addActive = False
         self.hide()
@@ -602,7 +585,7 @@ class EditWindow(QWidget):
     -----------------
     parentWindow : MainWindow object
         Parent of the window.
-    scroll : QScrollArea object
+    taskArea : QScrollArea object
         Scroll area of window.
     rows : list of dictionaries
         Element of rows is a dictionary:
@@ -612,59 +595,142 @@ class EditWindow(QWidget):
         Such dictionary represents one element from tasks list.
     grid : QGridLayout object
         Layout of objects in QScrollArea.
+    activeTasks : list
+        List of visible tasks in grid.
+    filter : QHBoxLayout object
+        Layout of filter widgets.
+    (date|text)Field : QLineEdit object
+        Filter widgets.
 
     """
     def __init__(self, parent=None):
         super().__init__()
-        self.initUI()
         self.parentWindow = parent
         self.parentWindow.editActive = True
+        self.activeTasks = tasks
+        self.dateFieldText = ''
+        self.textFieldText = ''
+        self.initUI()
 
     def initUI(self):
         """ Init user interface. """
+        # use QVBoxLayout to store two layouts vertically
+        self.vl = QVBoxLayout()
+
+        # widget for scrollArea
+        self.topWidget = QWidget()
         self.grid = QGridLayout()
-        self.setLayout(self.grid)
+        self.topWidget.setLayout(self.grid)
+        self.vl.addWidget(self.topWidget)
 
+        # layout for filter
+        self.filter = QHBoxLayout()
+        # draw filter widgets
+        self.drawFilter()
+        spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
+        self.vl.addItem(spacer)
+        self.vl.addLayout(self.filter)
+
+        self.setLayout(self.vl)
         self.rows = []
-        self.fill()
 
-        self.scroll = QScrollArea()
-        self.scroll.setWidget(self)
-        self.scroll.setWidgetResizable(True)
-        self.scroll.resize(500, 350)
-        self.scroll.show()
-        self.scroll.move(QApplication.desktop().screen().rect().center() -
-                         self.rect().center())
-        self.scroll.setWindowTitle(conf.lang.EDIT_TITLE)
-        self.scroll.setWindowIcon(QIcon('edit.ico'))
-        self.scroll.closeEvent = self.closeEvent
-        self.scroll.mousePressEvent = self.mousePressEvent
+        self.taskArea = QScrollArea(self)
+        self.taskArea.setWidget(self.topWidget)
+        self.taskArea.setWidgetResizable(True)
+        self.taskArea.resize(500, 350)
+        self.resize(500, 395)
+        self.setMinimumSize(460, 90)
+        self.fill()
+        self.show()
+        self.move(QApplication.desktop().screen().rect().center() -
+                  self.rect().center())
+        self.setWindowTitle(conf.lang.EDIT_TITLE)
+        self.setWindowIcon(QIcon('edit.ico'))
+
+    def clearLayout(self, layout):
+        """ Removes all widgets from specific layout. """
+        for i in reversed(range(layout.count())):
+            item = layout.itemAt(i)
+            if not isinstance(item, QSpacerItem):
+                item.widget().close()
+            layout.removeItem(item)
+
+    def drawFilter(self):
+        """ Draws filter widgets. """
+        self.clearLayout(self.filter)
+
+        self.hideBtn = QPushButton()
+        if conf.filter:
+            self.hideBtn.setText(conf.lang.VISIBLE_F)
+            self.hideBtn.setFixedSize(23, 23)
+            self.vl.setContentsMargins(11, 11, 11, 11)
+        else:
+            self.hideBtn.setText(conf.lang.HIDDEN_F)
+            self.hideBtn.setFixedSize(23, 15)
+            self.vl.setContentsMargins(0, 0, 0, 0)
+        self.hideBtn.clicked.connect(self.inverseFilter)
+        self.filter.addWidget(self.hideBtn)
+        if conf.filter:
+            filterLbl = QLabel(conf.lang.FILTER)
+            filterLbl.setStyleSheet('QLabel {' \
+                                            'border-width: 0 1px 0 0;' \
+                                            'border-style: solid;' \
+                                            'border-color: black;' \
+                                            'margin: 0 5px 0 0;' \
+                                           '}')
+            self.filter.addWidget(filterLbl)
+
+            dateLbl = QLabel(conf.lang.DATE_F)
+            self.filter.addWidget(dateLbl)
+            self.dateField = QLineEdit()
+            self.dateField.setText(self.dateFieldText)
+            self.filter.addWidget(self.dateField)
+
+            textLbl = QLabel(conf.lang.TEXT_F)
+            self.filter.addWidget(textLbl)
+            self.textField = QLineEdit()
+            self.textField.setText(self.textFieldText)
+            self.filter.addWidget(self.textField)
+
+            self.dateField.textChanged.connect(self.filterApply)
+            self.textField.textChanged.connect(self.filterApply)
+
+    def inverseFilter(self):
+        """ Change state of filter. """
+        conf.filter = not conf.filter
+        rewriteConfig()
+        if not conf.filter:
+            self.dateFieldText = self.dateField.text()
+            self.textFieldText = self.textField.text()
+        self.drawFilter()
+        self.resizeEvent(QResizeEvent(QSize(self.width(), self.height()),
+                                      QSize(self.width(), self.height())))
 
     def fill(self):
-        """ Fill self.scroll by items that represens tasks """
+        """ Fill self.taskArea by items that represens tasks. """
         # delete items from self.grid
-        for i in range(self.grid.count()):
-            item = self.grid.itemAt(i)
-            if isinstance(item, QSpacerItem):
-                self.grid.removeItem(item)
-            else:
-                self.grid.itemAt(i).widget().close()
+        self.clearLayout(self.grid)
 
-        self.rows = [{} for i in range(len(tasks))]
-        if len(tasks) == 0:
+        aTasks = self.activeTasks
+        self.rows = [{} for i in range(len(aTasks))]
+        if len(aTasks) == 0:
             noLbl = QLabel(conf.lang.NO_TASKS)
             noLbl.setAlignment(Qt.AlignCenter)
             self.grid.addWidget(noLbl, 0, 0, 1, 5)
         else:
-            for i in range(len(tasks)):
-                datetime = ' '.join((dateToStr(tasks[i].getDateTime())['date'],
-                                     dateToStr(tasks[i].getDateTime())['time']))
-                # replace newlines and tabs in text, cut in on 25 symbols
-                text = tasks[i].text.replace('\n', ' ').replace('\t', '   ')
-                text = text[:25] + '...' if len(text) > 25 else text
+            for i in range(len(aTasks)):
+                datetime = ' '.join((dateToStr(aTasks[i].getDateTime())['date'],
+                                     dateToStr(aTasks[i].getDateTime())['time']))
+                # replace newlines and tabs in text
+                text = aTasks[i].text.replace('\n', ' ').replace('\t', '   ')
                 row = {}
                 row['date'] = QLabel(datetime)
-                row['text'] = QLabel(text)
+                row['text'] = QLabel()
+                # change label's resizeEvent
+                # with passing QLabel and text
+                row['text'].resizeEvent = \
+                            lambda evt, lbl=row['text'], txt=text: \
+                                   self.labelResize(lbl, evt, txt)
                 row['edit'] = QPushButton(conf.lang.EDIT)
                 row['del'] = QPushButton(conf.lang.DELETE)
                 row['edit'].setToolTip(conf.lang.EDIT_TOOLTIP_TEXT)
@@ -681,7 +747,40 @@ class EditWindow(QWidget):
                 self.grid.addWidget(self.rows[i]['del'], i, 4)
         # add spacer to pin rows to window's top side
         spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
-        self.grid.addItem(spacer, len(tasks), 0, 1, 5)
+        self.grid.addItem(spacer, len(aTasks), 0, 1, 5)
+        self.grid.setColumnMinimumWidth(0, 100)
+        self.grid.setColumnMinimumWidth(3, 80)
+        self.grid.setColumnMinimumWidth(4, 80)
+        for i in range(self.grid.columnCount()):
+            self.grid.setColumnStretch(i, 0)
+        self.grid.setColumnStretch(1, 1)
+
+    def labelResize(self, label, event, text):
+        """ Change label's text due to its size. """
+        width = self.taskArea.width() - 320
+        # if get width from event: width = event.size().width()
+        # resizing will stop when full text is shown in label
+        metrics = QFontMetrics(label.font())
+        ellipsis = metrics.elidedText(text, Qt.ElideRight, width)
+        label.setText(ellipsis)
+
+    def filterApply(self):
+        """ Selects tasks to be shown. """
+        date = self.dateField.text()
+        text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
+        text = text.lower()
+
+        aTasks = []
+        for i in tasks:
+            datetime = ' '.join((dateToStr(i.getDateTime())['date'],
+                                 dateToStr(i.getDateTime())['time']))
+            tasktext = i.text.replace('\n', ' ').replace('\t', '   ')
+            tasktext = tasktext.lower()
+            if datetime.find(date) > -1 and tasktext.find(text) > -1:
+                aTasks.append(i)
+
+        self.activeTasks = aTasks
+        self.fill()
 
     def edit(self, index):
         """ Open addWindow with selected task. """
@@ -696,20 +795,28 @@ class EditWindow(QWidget):
         addWindow.parentWindow = self
         # pass index parameter to notice it in addWindow
         addWindow.index = index
-        self.window().hide()
+        self.hide()
 
     def delete(self, index):
-        """ Delete selected reminder from tasks list """
+        """ Delete selected reminder from tasks list. """
         entry = tasks[index]
         tasks.remove(entry)
         rewrite()
         self.fill()
 
+    def resizeEvent(self, event):
+        """ Resize taskArea due to size of window. """
+        width = event.size().width()
+        height = self.size().height()
+        if conf.filter:
+            self.taskArea.resize(width, height - 45)
+        else:
+            self.taskArea.resize(width, height - 15)
+
     def closeEvent(self, event):
         """ Closes window. """
         self.parentWindow.editActive = False
         event.ignore()
-        self.scroll.hide()
         self.hide()
 
 
@@ -732,7 +839,6 @@ def reload():
     w.addActive, w.addWindow, w.editActive, w.editWindow = params
     if w.editWindow:
         w.editWindow.parentWindow = w
-        w.editWindow.scroll.hide()
         w.editWindow.hide()
         w.editWindow = None
         if w.editActive:
@@ -753,7 +859,6 @@ def reload():
                 w.editActive = False
                 w.showWindow('editAction')
                 w.addActive = True
-                w.editWindow.scroll.hide()
                 w.editWindow.hide()
                 w.addWindow.parentWindow = w.editWindow
             w.addWindow.dateEdit.setText(date)
