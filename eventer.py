@@ -321,9 +321,9 @@ class MainWindow(QWidget):
                     date['date'] = date['date'].replace('/', '.')
                     date['time'] = date['time'].replace('.', ':')
                     tasks.append(Entry(date['date'], date['time'], entry.text))
-                if self.editActive:
-                    self.editWindow.fill()
                 rewrite()
+                if self.editActive:
+                    self.editWindow.filterApply()
 
     def showWindow(self, event):
         """ Show child windows.
