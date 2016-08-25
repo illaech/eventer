@@ -8,28 +8,36 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from lang import RU, EN
+import icons
+
+""" Language """
 
 langs = {'RU': RU, 'EN': EN}
 
 def langSelect(config, lang):
+    """ Change selected language. """
     config.lang = langs[lang]
     reload()
 
+""" Timedelta formatting """
+
 def getFormattedStrTime(time, t_, td, tf, ts):
+    """ Format 'time' to string with t_, td, tf and ts. """
     if time == 0:
         return 0
     t_dec, t_uni = int(time / 10) % 10, time % 10
     if t_dec == 0 and t_uni == 1:
-        frmtd = '{} {}'.format(time, t_)
+        frmtd = '{} {}'.format(time, t_) # 1
     elif t_dec > 1 and t_uni == 1:
-        frmtd = '{} {}'.format(time, td)
+        frmtd = '{} {}'.format(time, td) # 21, 31, ...
     elif t_uni > 1 and t_uni < 5 and t_dec != 1:
-        frmtd = '{} {}'.format(time, tf)
+        frmtd = '{} {}'.format(time, tf) # 2, 3, 4, 22, 23, 24, 32, 33, ...
     else:
-        frmtd = '{} {}'.format(time, ts)
+        frmtd = '{} {}'.format(time, ts) # 5 to 20, 25 to 30, 35 to 40, ...
     return frmtd
 
 def secondsToStr(num):
+    """ Format seconds to string includes days, hours, minutes and seconds. """
     days = floor(num / 86400)
     hours = floor(num % 86400 / 3600)
     minutes = floor(num % 86400 % 3600 / 60)
@@ -58,9 +66,65 @@ def secondsToStr(num):
         text = '{} {}'.format(seconds, conf.lang.SECONDS)
     return text
 
+""" Icons """
+
+class Icon():
+    """ Icon.
+
+    Parameters
+    ----------
+    bytes : base64-encoded byte string
+        Set attribute 'base64' to 'bytes'.
+    icon : QIcon
+        Set attribute 'icon' to 'icon'.
+
+    Attributes
+    ----------
+    base64 : base64-encoded byte string
+        Encoded pixmap of icon.
+    icon : QIcon
+        Icon itself.
+
+    """
+    def __init__(self, bytes=b'', icon=None):
+        self.base64 = bytes
+        self.icon = icon
+
+    def setBytes(self, bytes):
+        """ Set attribute 'base64' to 'bytes'. """
+        self.base64 = bytes
+        return self
+
+    def setIcon(self, icon):
+        """ Set attribute 'icon' to 'icon'. """
+        self.icon = icon
+        return self
+
+    def convertToIcon(self):
+        """ Set 'icon' by converting 'base64' to QIcon. """
+        bytes = QByteArray().fromBase64(self.base64)
+        image = QImage().fromData(bytes, "ico");
+        self.icon = QIcon(QPixmap().fromImage(image))
+        return self
+
+    def getIcon(self):
+        """ Return 'icon'. """
+        return self.icon
+
+    def getBytes(self):
+        """ Return 'base64'. """
+        return self.base64
+
+    def convertToBytes(self):
+        """ Set 'base64' by converting 'icon' to bytes. """
+        pass # work in progress
+
 """ Config class """
 
 class Config:
+    """ Config element.
+
+    """
     supported = ('lang', 'tdelta', 'filter')
     lang = None
     tdelta = None
@@ -96,9 +160,9 @@ class Config:
 
 conf = Config(RU, 600, True)
 
-""" preliminary definitions """
+""" Preliminary definitions """
 
-errors = []  # see line 906
+errors = []  # see line 974
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -244,7 +308,8 @@ class MainWindow(QWidget):
         """ Init GUI and all required things. """
         super().__init__()
 
-        self.tray = QSystemTrayIcon(QIcon('add.ico'), self)
+        iconAdd = Icon(bytes=icons.add).convertToIcon().getIcon()
+        self.tray = QSystemTrayIcon(iconAdd, self)
 
         menu = QMenu()
         menu.addAction(conf.lang.ADD_ACTION,
@@ -303,7 +368,8 @@ class MainWindow(QWidget):
                 msgBox = QMessageBox()
                 msgBox.setText(entry.text)
                 msgBox.setWindowTitle('{} {}'.format(conf.lang.TASK, date))
-                msgBox.setWindowIcon(QIcon('alert.ico'))
+                iconAlert = Icon(bytes=icons.alert).convertToIcon().getIcon()
+                msgBox.setWindowIcon(iconAlert)
                 msgBox.setIcon(QMessageBox.Information)
                 # msgBox.setTextFormat(Qt.RichText)
                 msgBox.addButton(QPushButton(conf.lang.REPEAT.format(
@@ -419,7 +485,8 @@ class AddWindow(QWidget):
     def initUI(self):
         """ Init user interface. """
         self.setWindowTitle(conf.lang.ADD_TITLE)
-        self.setWindowIcon(QIcon('add.ico'))
+        iconAdd = Icon(bytes=icons.add).convertToIcon().getIcon()
+        self.setWindowIcon(iconAdd)
 
         self.resize(350, 350)
         self.move(QApplication.desktop().screen().rect().center() -
@@ -645,7 +712,8 @@ class EditWindow(QWidget):
         self.move(QApplication.desktop().screen().rect().center() -
                   self.rect().center())
         self.setWindowTitle(conf.lang.EDIT_TITLE)
-        self.setWindowIcon(QIcon('edit.ico'))
+        iconEdit = Icon(bytes=icons.edit).convertToIcon().getIcon()
+        self.setWindowIcon(iconEdit)
 
     def clearLayout(self, layout):
         """ Removes all widgets from specific layout. """
