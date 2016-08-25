@@ -73,8 +73,8 @@ class Icon():
 
     Parameters
     ----------
-    bytes : base64-encoded byte string
-        Set attribute 'base64' to 'bytes'.
+    byte : base64-encoded byte string
+        Set attribute 'base64' to 'byte'.
     icon : QIcon
         Set attribute 'icon' to 'icon'.
 
@@ -86,13 +86,13 @@ class Icon():
         Icon itself.
 
     """
-    def __init__(self, bytes=b'', icon=None):
-        self.base64 = bytes
+    def __init__(self, byte=b'', icon=None):
+        self.base64 = byte
         self.icon = icon
 
-    def setBytes(self, bytes):
-        """ Set attribute 'base64' to 'bytes'. """
-        self.base64 = bytes
+    def setBytes(self, byte):
+        """ Set attribute 'base64' to 'byte'. """
+        self.base64 = byte
         return self
 
     def setIcon(self, icon):
@@ -102,8 +102,8 @@ class Icon():
 
     def convertToIcon(self):
         """ Set 'icon' by converting 'base64' to QIcon. """
-        bytes = QByteArray().fromBase64(self.base64)
-        image = QImage().fromData(bytes, "ico");
+        byte = QByteArray().fromBase64(self.base64)
+        image = QImage().fromData(byte, "ico");
         self.icon = QIcon(QPixmap().fromImage(image))
         return self
 
@@ -308,7 +308,7 @@ class MainWindow(QWidget):
         """ Init GUI and all required things. """
         super().__init__()
 
-        iconAdd = Icon(bytes=icons.add).convertToIcon().getIcon()
+        iconAdd = Icon(byte=icons.add).convertToIcon().getIcon()
         self.tray = QSystemTrayIcon(iconAdd, self)
 
         menu = QMenu()
@@ -368,7 +368,7 @@ class MainWindow(QWidget):
                 msgBox = QMessageBox()
                 msgBox.setText(entry.text)
                 msgBox.setWindowTitle('{} {}'.format(conf.lang.TASK, date))
-                iconAlert = Icon(bytes=icons.alert).convertToIcon().getIcon()
+                iconAlert = Icon(byte=icons.alert).convertToIcon().getIcon()
                 msgBox.setWindowIcon(iconAlert)
                 msgBox.setIcon(QMessageBox.Information)
                 # msgBox.setTextFormat(Qt.RichText)
@@ -485,7 +485,7 @@ class AddWindow(QWidget):
     def initUI(self):
         """ Init user interface. """
         self.setWindowTitle(conf.lang.ADD_TITLE)
-        iconAdd = Icon(bytes=icons.add).convertToIcon().getIcon()
+        iconAdd = Icon(byte=icons.add).convertToIcon().getIcon()
         self.setWindowIcon(iconAdd)
 
         self.resize(350, 350)
@@ -712,7 +712,7 @@ class EditWindow(QWidget):
         self.move(QApplication.desktop().screen().rect().center() -
                   self.rect().center())
         self.setWindowTitle(conf.lang.EDIT_TITLE)
-        iconEdit = Icon(bytes=icons.edit).convertToIcon().getIcon()
+        iconEdit = Icon(byte=icons.edit).convertToIcon().getIcon()
         self.setWindowIcon(iconEdit)
 
     def clearLayout(self, layout):
