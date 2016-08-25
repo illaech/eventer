@@ -420,25 +420,30 @@ class MainWindow(QWidget):
         Then if event is 'editAction' then it opens editWindow.
 
         """
-        if event == QSystemTrayIcon.Trigger and not (self.addActive or
-                    self.editActive) or event == 'addAction':
+        if event == 'editAction':
+            if self.editActive:
+                QApplication.alert(self.editWindow)
+            else:
+                self.editWindow = EditWindow(self)
+                self.editWindow.show()
+                self.editWindow.setFocus(True)
+                self.editWindow.activateWindow()
+            return self.editWindow
+        elif event == 'addAction':
             self.addWindow = AddWindow(self)
             self.addWindow.show()
             self.addWindow.setFocus(True)
             self.addWindow.activateWindow()
             return self.addWindow
-        elif self.addActive:
-            QApplication.alert(self.addWindow)
+        elif event == QSystemTrayIcon.Trigger:
+            if self.addActive:
+                QApplication.alert(self.addWindow)
+            else:
+                self.addWindow = AddWindow(self)
+                self.addWindow.show()
+                self.addWindow.setFocus(True)
+                self.addWindow.activateWindow()
             return self.addWindow
-        elif self.editActive:
-            QApplication.alert(self.editWindow)
-            return self.editWindow
-        elif event == 'editAction':
-            self.editWindow = EditWindow(self)
-            self.editWindow.show()
-            self.editWindow.setFocus(True)
-            self.editWindow.activateWindow()
-            return self.editWindow
 
     def backup(self):
         """ Copies content of tasks file to backup file. """
@@ -660,6 +665,8 @@ class AddWindow(QWidget):
             self.parentWindow.show()
             self.parentWindow.filterApply()
         else:
+            if self.parentWindow.editActive:
+                self.parentWindow.editWindow.filterApply()
             self.parentWindow.addActive = False
         self.hide()
 
