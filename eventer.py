@@ -8,28 +8,36 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from lang import RU, EN
+import icons
 
-langs = {'RU': RU, 'EN': EN}
+""" Language. """
+
+langs = {'RU': RU, 'EN': EN} # avaliable languages
 
 def langSelect(config, lang):
+    """ Change selected language. """
     config.lang = langs[lang]
     reload()
 
+""" Timedelta formatting. """
+
 def getFormattedStrTime(time, t_, td, tf, ts):
+    """ Format 'time' to string with t_, td, tf and ts. """
     if time == 0:
         return 0
     t_dec, t_uni = int(time / 10) % 10, time % 10
     if t_dec == 0 and t_uni == 1:
-        frmtd = '{} {}'.format(time, t_)
+        frmtd = '{} {}'.format(time, t_) # 1
     elif t_dec > 1 and t_uni == 1:
-        frmtd = '{} {}'.format(time, td)
+        frmtd = '{} {}'.format(time, td) # 21, 31, ...
     elif t_uni > 1 and t_uni < 5 and t_dec != 1:
-        frmtd = '{} {}'.format(time, tf)
+        frmtd = '{} {}'.format(time, tf) # 2, 3, 4, 22, 23, 24, 32, 33, ...
     else:
-        frmtd = '{} {}'.format(time, ts)
+        frmtd = '{} {}'.format(time, ts) # 5 to 20, 25 to 30, 35 to 40, ...
     return frmtd
 
 def secondsToStr(num):
+    """ Format seconds to string includes days, hours, minutes and seconds. """
     days = floor(num / 86400)
     hours = floor(num % 86400 / 3600)
     minutes = floor(num % 86400 % 3600 / 60)
@@ -58,9 +66,79 @@ def secondsToStr(num):
         text = '{} {}'.format(seconds, conf.lang.SECONDS)
     return text
 
-""" Config class """
+""" Icons. """
+
+class Icon():
+    """ Icon.
+
+    Parameters
+    ----------
+    byte : base64-encoded byte string
+        Set attribute 'base64' to 'byte'.
+    icon : QIcon
+        Set attribute 'icon' to 'icon'.
+
+    Attributes
+    ----------
+    base64 : base64-encoded byte string
+        Encoded pixmap of icon.
+    icon : QIcon
+        Icon itself.
+
+    """
+    def __init__(self, byte=b'', icon=None):
+        self.base64 = byte
+        self.icon = icon
+
+    def setBytes(self, byte):
+        """ Set attribute 'base64' to 'byte'. """
+        self.base64 = byte
+        return self
+
+    def setIcon(self, icon):
+        """ Set attribute 'icon' to 'icon'. """
+        self.icon = icon
+        return self
+
+    def convertToIcon(self):
+        """ Set 'icon' by converting 'base64' to QIcon. """
+        byte = QByteArray().fromBase64(self.base64)
+        image = QImage().fromData(byte, "ico");
+        self.icon = QIcon(QPixmap().fromImage(image))
+        return self
+
+    def getIcon(self):
+        """ Return 'icon'. """
+        return self.icon
+
+    def getBytes(self):
+        """ Return 'base64'. """
+        return self.base64
+
+    def convertToBytes(self):
+        """ Set 'base64' by converting 'icon' to bytes. """
+        pass # work in progress
+
+""" Config class. """
 
 class Config:
+    """ Config element.
+
+    Parameters and attributes
+    -------------------------
+    lang : Language object
+        Defines language of application.
+    tdelta : int
+        Defines time delta for repeating tasks, seconds.
+    filter: bool
+        If True filter in EditWindow will be shown.
+
+    Attribute
+    ---------
+    supported : tuple
+        Defines appropriate input parameters.
+
+    """
     supported = ('lang', 'tdelta', 'filter')
     lang = None
     tdelta = None
@@ -72,6 +150,7 @@ class Config:
         self.filter = filter
 
     def __str__(self):
+        """ Represent current configuration. """
         dic = {
             'lang': str(self.lang),
             'tdelta': self.tdelta,
@@ -80,6 +159,7 @@ class Config:
         return json.dumps(dic)
 
     def load(self, dic):
+        """ Load attributes from given dictionary. """
         for i in dic:
             if i not in self.supported:
                 pass
@@ -87,6 +167,7 @@ class Config:
                 setattr(self, i, dic[i])
 
     def dump(self, f):
+        """ Write current configuration to config file. """
         try:
             with open(f, 'w') as f_:
                 f_.write(str(self))
@@ -94,11 +175,11 @@ class Config:
             errors.append(['{} "{}"'.format(conf.lang['CANT_OPEN_FILE'], f),
                            'IOError: Can\'t open file!'])
 
-conf = Config(RU, 600, True)
+conf = Config(RU, 600, True) # Config object
 
-""" preliminary definitions """
+""" Preliminary definitions. """
 
-errors = []  # see line 906
+errors = []  # see line 997
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -124,7 +205,7 @@ else:
    errors.append(['{}'.format(conf.lang.UNSUPPORT_SYS),
                   'OSError: Unsupported system'])
 
-if len(errors) == 0:
+if len(errors) == 0: # if there're no errors, create directory
     if not os.path.exists(directory):
         try:
             os.makedirs(directory)
@@ -133,12 +214,12 @@ if len(errors) == 0:
                            format(conf.lang.CANT_CREATE_DIR, directory),
                            'PermissionError: Can\'t create directory!'])
 
-tasks = []
+tasks = [] # array for reminders
 
-""" global functions """
+""" Some common global definitions. """
 
 def rewrite():
-    """ Update tasks file """
+    """ Update tasks file. """
     try:
         global tasks
         tasks = sorted(tasks, key=lambda x: strToDate('{} {}'.format(x.date,
@@ -150,7 +231,7 @@ def rewrite():
                        'IOError: Can\'t open file!'])
 
 def rewriteConfig():
-    """ Update config file """
+    """ Update config file. """
     try:
         conf.dump(config)
     except IOError:
@@ -177,8 +258,6 @@ def error(widget, text, textconsole):
     # Also, logging to text file can be used here.
     print(textconsole)
 
-
-""" main class definitions """
 
 class Entry:
     """ Task entry.
@@ -213,7 +292,7 @@ class Entry:
         return strToDate('{} {}'.format(self.date, self.time))
 
 
-""" QT class definitions """
+""" QT class definitions. """
 
 class MainWindow(QWidget):
     """ Main window of application. It is represented by icon in
@@ -223,12 +302,12 @@ class MainWindow(QWidget):
     -----------------
     addWindow : AddWindow object
     addActive : boolean
-        If user wants to add new task, addWindow becomes the QWidget for
-        it, and while it is active addActive remains True.
+        If user wants to add new task, 'addWindow' becomes the QWidget for
+        it, and while it is active 'addActive' remains True.
     editWindow : EditWindow object
     editActive : boolean
-        If user wants to edit tasks, editWindow becomes the QWidget for
-        it, and while it is active editActive remains True.
+        If user wants to edit tasks, 'editWindow' becomes the QWidget for
+        it, and while it is active 'editActive' remains True.
     tray : QSystemTrayIcon object
         Tray icon and all its attributes like context menu and
         activated action.
@@ -236,7 +315,7 @@ class MainWindow(QWidget):
         Timer that fires every second. If one reminder's time is up,
         shows message.
     backupTimer : QTimer object
-        Timer that fires every 10 minutes. Saves current state of
+        Timer that fires every 5 minutes. Saves current state of
         tasks file to backup file.
 
     """
@@ -244,7 +323,8 @@ class MainWindow(QWidget):
         """ Init GUI and all required things. """
         super().__init__()
 
-        self.tray = QSystemTrayIcon(QIcon('add.ico'), self)
+        iconAdd = Icon(byte=icons.add).convertToIcon().getIcon()
+        self.tray = QSystemTrayIcon(iconAdd, self)
 
         menu = QMenu()
         menu.addAction(conf.lang.ADD_ACTION,
@@ -303,7 +383,8 @@ class MainWindow(QWidget):
                 msgBox = QMessageBox()
                 msgBox.setText(entry.text)
                 msgBox.setWindowTitle('{} {}'.format(conf.lang.TASK, date))
-                msgBox.setWindowIcon(QIcon('alert.ico'))
+                iconAlert = Icon(byte=icons.alert).convertToIcon().getIcon()
+                msgBox.setWindowIcon(iconAlert)
                 msgBox.setIcon(QMessageBox.Information)
                 # msgBox.setTextFormat(Qt.RichText)
                 msgBox.addButton(QPushButton(conf.lang.REPEAT.format(
@@ -360,7 +441,7 @@ class MainWindow(QWidget):
             return self.editWindow
 
     def backup(self):
-        """ Copies content of tasks file to backup file """
+        """ Copies content of tasks file to backup file. """
         with open(backup, 'w') as to_, open(filename, 'r') as from_:
             to_.write(from_.read())
 
@@ -388,7 +469,11 @@ class MainWindow(QWidget):
                 self.editWindow.fill()
 
     def quit(self, really=True):
-        """ Quits application. Hides tray icon firstly. """
+        """ Quits application. Hides tray icon firstly.
+        If really is not True, do not quits the application.
+        It is used to re-launch the application.
+
+        """
         self.tray.hide()
         self.timer.stop()
         self.backupTimer.stop()
@@ -419,7 +504,8 @@ class AddWindow(QWidget):
     def initUI(self):
         """ Init user interface. """
         self.setWindowTitle(conf.lang.ADD_TITLE)
-        self.setWindowIcon(QIcon('add.ico'))
+        iconAdd = Icon(byte=icons.add).convertToIcon().getIcon()
+        self.setWindowIcon(iconAdd)
 
         self.resize(350, 350)
         self.move(QApplication.desktop().screen().rect().center() -
@@ -522,7 +608,7 @@ class AddWindow(QWidget):
         self.saveBtn.setEnabled(self.dateEdit.valid and self.timeEdit.valid)
 
     def save(self):
-        """ Saves reminder """
+        """ Saves reminder. """
         date = self.dateEdit.text().replace('/', '.')
         try:
             d, m, y = date.split('.')
@@ -645,7 +731,8 @@ class EditWindow(QWidget):
         self.move(QApplication.desktop().screen().rect().center() -
                   self.rect().center())
         self.setWindowTitle(conf.lang.EDIT_TITLE)
-        self.setWindowIcon(QIcon('edit.ico'))
+        iconEdit = Icon(byte=icons.edit).convertToIcon().getIcon()
+        self.setWindowIcon(iconEdit)
 
     def clearLayout(self, layout):
         """ Removes all widgets from specific layout. """
@@ -820,7 +907,7 @@ class EditWindow(QWidget):
         self.hide()
 
 
-""" main program part """
+""" "Main" program part. """
 
 app = QApplication(sys.argv)
 # Do not exit app if there're no opened windows
@@ -828,14 +915,16 @@ app.setQuitOnLastWindowClosed(False)
 w = MainWindow()
 
 def reload():
+    """ Restart the application. """
     global w
     params = (w.addActive, w.addWindow, w.editActive, w.editWindow)
-    w.quit(False)
-    w = MainWindow()
+    w.quit(False) # 'really' parameter is set to False
+    w = MainWindow() # do it again
     for l in w.lang:
         w.lang[l].setChecked(False)
-    w.lang[str(conf.lang)].setChecked(True)
+    w.lang[str(conf.lang)].setChecked(True) # apply config changes
     rewriteConfig()
+    # restore parameters
     w.addActive, w.addWindow, w.editActive, w.editWindow = params
     if w.editWindow:
         w.editWindow.parentWindow = w
@@ -867,6 +956,7 @@ def reload():
             w.addWindow.index = index
 
 def readConfig():
+    """ Read config file and apply its parameters. """
     # Trying to read config file.
     # If there's no config file, default config is loaded.
     try:
@@ -880,6 +970,7 @@ def readConfig():
                        '{}'.format(e)])
 
 def readTasks():
+    """ Read reminders list. """
     # Trying to read task list.
     # If there's no tasks file, task list is empty.
     try:
