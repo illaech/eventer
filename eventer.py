@@ -420,25 +420,30 @@ class MainWindow(QWidget):
         Then if event is 'editAction' then it opens editWindow.
 
         """
-        if event == QSystemTrayIcon.Trigger and not (self.addActive or
-                    self.editActive) or event == 'addAction':
+        if event == 'editAction':
+            if self.editActive:
+                QApplication.alert(self.editWindow)
+            else:
+                self.editWindow = EditWindow(self)
+                self.editWindow.show()
+                self.editWindow.setFocus(True)
+                self.editWindow.activateWindow()
+            return self.editWindow
+        elif event == 'addAction':
             self.addWindow = AddWindow(self)
             self.addWindow.show()
             self.addWindow.setFocus(True)
             self.addWindow.activateWindow()
             return self.addWindow
-        elif self.addActive:
-            QApplication.alert(self.addWindow)
+        elif event == QSystemTrayIcon.Trigger:
+            if self.addActive:
+                QApplication.alert(self.addWindow)
+            else:
+                self.addWindow = AddWindow(self)
+                self.addWindow.show()
+                self.addWindow.setFocus(True)
+                self.addWindow.activateWindow()
             return self.addWindow
-        elif self.editActive:
-            QApplication.alert(self.editWindow)
-            return self.editWindow
-        elif event == 'editAction':
-            self.editWindow = EditWindow(self)
-            self.editWindow.show()
-            self.editWindow.setFocus(True)
-            self.editWindow.activateWindow()
-            return self.editWindow
 
     def backup(self):
         """ Copies content of tasks file to backup file. """
@@ -466,7 +471,7 @@ class MainWindow(QWidget):
             tasks = []
             readTasks()
             if self.editActive:
-                self.editWindow.fill()
+                self.editWindow.filterApply()
 
     def quit(self, really=True):
         """ Quits application. Hides tray icon firstly.
@@ -570,9 +575,17 @@ class AddWindow(QWidget):
         dateValid = QRegExpValidator(dateRegExp)
         timeValid = QRegExpValidator(timeRegExp)
         self.dateEdit.validator = dateValid
+        # if there's no text in lineEdits, pressing 'Return' button will
+        # insert today's date and time in them, else it will return 0
+        self.dateEdit.returnPressed.connect(lambda: \
+            self.dateEdit.setText(dateToStr(dt.datetime.today())['date']) if
+                self.dateEdit.text() is '' else 0)
         self.dateEdit.textChanged.connect(self.checkState)
         self.dateEdit.textChanged.emit(self.timeEdit.text())
         self.timeEdit.validator = timeValid
+        self.timeEdit.returnPressed.connect(lambda: \
+            self.timeEdit.setText(dateToStr(dt.datetime.today())['time']) if
+                self.timeEdit.text() is '' else 0)
         self.timeEdit.textChanged.connect(self.checkState)
         self.timeEdit.textChanged.emit(self.timeEdit.text())
 
@@ -660,6 +673,8 @@ class AddWindow(QWidget):
             self.parentWindow.show()
             self.parentWindow.filterApply()
         else:
+            if self.parentWindow.editActive:
+                self.parentWindow.editWindow.filterApply()
             self.parentWindow.addActive = False
         self.hide()
 
@@ -726,7 +741,7 @@ class EditWindow(QWidget):
         self.taskArea.resize(500, 350)
         self.resize(500, 395)
         self.setMinimumSize(460, 90)
-        self.fill()
+        self.filterApply()
         self.show()
         self.move(QApplication.desktop().screen().rect().center() -
                   self.rect().center())
@@ -889,7 +904,7 @@ class EditWindow(QWidget):
         entry = tasks[index]
         tasks.remove(entry)
         rewrite()
-        self.fill()
+        self.filterApply()
 
     def resizeEvent(self, event):
         """ Resize taskArea due to size of window. """
