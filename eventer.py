@@ -36,12 +36,16 @@ def getFormattedStrTime(time, t_, td, tf, ts):
         frmtd = '{} {}'.format(time, ts) # 5 to 20, 25 to 30, 35 to 40, ...
     return frmtd
 
-def secondsToStr(num, dic=False):
+def parseSeconds(num, dic=False):
     """ Format seconds to string includes days, hours, minutes and seconds. """
     days = floor(num / 86400)
     hours = floor(num % 86400 / 3600)
     minutes = floor(num % 86400 % 3600 / 60)
     seconds = floor(num % 86400 % 3600 % 60)
+
+    if dic:
+        return {'days': days, 'hours': hours,
+                'minutes': minutes, 'seconds': seconds}
 
     days = getFormattedStrTime(days, conf.lang.DAY_, conf.lang.DAYD,
                                conf.lang.DAYF, conf.lang.DAYS)
@@ -51,10 +55,6 @@ def secondsToStr(num, dic=False):
                                   conf.lang.MINUTEF, conf.lang.MINUTES)
     seconds = getFormattedStrTime(seconds, conf.lang.SECOND_, conf.lang.SECONDD,
                                   conf.lang.SECONDF, conf.lang.SECONDS)
-
-    if dic:
-        return {'days': days, 'hours': hours,
-                'minutes': minutes, 'seconds': seconds}
 
     text = ''
     text += days if days != 0 else ''
@@ -396,7 +396,7 @@ class MainWindow(QWidget):
                 msgBox.setIcon(QMessageBox.Information)
                 # msgBox.setTextFormat(Qt.RichText)
                 msgBox.addButton(QPushButton(conf.lang.REPEAT.format(
-                                             secondsToStr(conf.tdelta))),
+                                             parseSeconds(conf.tdelta))),
                                  QMessageBox.YesRole)
                 msgBox.addButton(QPushButton(conf.lang.CLOSE),
                                  QMessageBox.NoRole)
@@ -953,7 +953,7 @@ class OptionsWindow(QWidget):
     def fill(self):
         """ Fills windows with widgets. """
         clearLayout(self.grid)
-        tdeltaDict = secondsToStr(self.conf.tdelta)
+        tdeltaDict = parseSeconds(self.conf.tdelta)
 
         self.grid.addWidget(QLabel(conf.lang.CHANGE_LANGUAGE), 0, 0)
 
