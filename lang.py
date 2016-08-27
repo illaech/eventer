@@ -10,7 +10,7 @@ allowed = ('name', 'cant_find_dir', 'unsupport_sys', 'cant_create_dir',
          'hours', 'hourf', 'minute_', 'minuted', 'minutes', 'minutef',
          'second_', 'secondd', 'seconds', 'secondf', 'filter', 'date_f',
          'text_f', 'hidden_f', 'visible_f', 'opt_title', 'change_tdelta',
-         'backup_timer', 'opt_action', 'full_name')
+         'backup_timer', 'opt_action', 'full_name', 'message_timer')
 
 ru_dict = {
     'NAME': 'RU',
@@ -76,8 +76,9 @@ ru_dict = {
     'DATE_F': 'Дата:',
     'OPT_TITLE': 'Настройки',
     'CHANGE_LANGUAGE': 'Сменить язык',
-    'CHANGE_TDELTA': 'Повторять задачи через',
-    'BACKUP_TIMER': 'Сохранять задачи каждые'
+    'CHANGE_TDELTA': 'Повторять напоминания через',
+    'MESSAGE_TIMER': 'Автоматически скрывать сообщения после',
+    'BACKUP_TIMER': 'Сохранять напоминания каждые'
 }
 
 class Language:
@@ -157,6 +158,7 @@ class Language:
     OPT_TITLE = 'Settings'
     CHANGE_LANGUAGE = 'Change language'
     CHANGE_TDELTA = 'Repeat reminders after'
+    MESSAGE_TIMER = 'Automatically close message after'
     BACKUP_TIMER = 'Save reminders every'
     
     def __init__(self, dic=None, **kwargs):

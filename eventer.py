@@ -4,9 +4,16 @@ from math import floor
 import json
 import datetime as dt
 import base64 as b64
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QValidator, QRegExpValidator, QIntValidator, \
+                        QImage, QPixmap, QIcon, QFontMetrics \
+                        QCloseEvent, QResizeEvent \
+from PyQt5.QtCore import Qt, QCoreApplication, QRegExp, QByteArray, QSize \
+                         QTimer
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QWidget, \
+                            QHBoxLayout, QVBoxLayout, QGridLayout, \
+                            QLabel, QLineEdit, QTextEdit, QPushButton, \
+                            QComboBox, QMenu, QSpacerItem, QScrollArea, \
+                            QMessageBox, QSizePolicy
 from lang import RU, EN
 import icons
 
@@ -136,20 +143,25 @@ class Config:
         Defines time delta for repeating tasks, seconds.
     filter: bool
         If True filter in EditWindow will be shown.
-
+    backup : int
+        Timeout of backup timer.
+    mesout : int
+        Timeout of message timer.
     Attribute
     ---------
     supported : tuple
         Defines appropriate input parameters.
 
     """
-    supported = ('lang', 'tdelta', 'filter', 'backup')
+    supported = ('lang', 'tdelta', 'filter', 'backup', 'mesout')
 
-    def __init__(self, lang=RU, tdelta=600, filter=True, backup=300):
+    def __init__(self, lang=RU, tdelta=600, filter=True, backup=300,
+                 mesout=60):
         self.lang = lang
         self.tdelta = tdelta
         self.filter = filter
         self.backup = backup
+        self.mesout = mesout
 
     def __str__(self):
         """ Represent current configuration. """
@@ -181,7 +193,7 @@ conf = Config() # Config object
 
 """ Preliminary definitions. """
 
-errors = []  # see line 1158
+errors = []  # see line 1235
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -380,25 +392,69 @@ class MainWindow(QWidget):
             today = dt.datetime.today()
             if (date - today).days < 0:
                 tasks.remove(entry)
-                msgBox = QMessageBox()
-                msgBox.setText(entry.text)
-                msgBox.setWindowTitle('{} {}'.format(conf.lang.TASK, date))
-                iconAlert = Icon(byte=icons.alert).convertToIcon().getIcon()
-                msgBox.setWindowIcon(iconAlert)
-                msgBox.setIcon(QMessageBox.Information)
-                # msgBox.setTextFormat(Qt.RichText)
-                msgBox.addButton(QPushButton(conf.lang.REPEAT.format(
-                                             parseSeconds(conf.tdelta))),
-                                 QMessageBox.YesRole)
-                msgBox.addButton(QPushButton(conf.lang.CLOSE),
-                                 QMessageBox.NoRole)
-                msgBox.setWindowFlags(Qt.WindowStaysOnTopHint)
+                class EvMessageBox(QMessageBox):
+                    """ QMessageBox with timer.
+
+                    Parameters
+                    ----------
+                    text : string
+                        Text of message.
+                    title : string
+                        Title of message window.
+                    wicon : QIcon object
+                        Icon of message window.
+                    icon : QMessageBox.Icon int
+                        Icon of message body.
+                    timeout : int
+                        Time for message has being shown.
+
+                    Useful attributes
+                    -----------------
+                    timer : QTimer object
+                        Timer attached to message.
+
+                    """
+                    def __init__(self, text, title, wicon, icon, timeout):
+                        super().__init__()
+                        self.timeout = timeout
+                        self.setText(text)
+                        self.setWindowTitle(title)
+                        self.setWindowIcon(wicon)
+                        self.setIcon(icon)
+                        self.addButton(QPushButton(conf.lang.REPEAT.format(
+                                                   parseSeconds(conf.tdelta))),
+                                       QMessageBox.YesRole)
+                        self.addButton(QPushButton(conf.lang.CLOSE),
+                                       QMessageBox.NoRole)
+                        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+                        # self.setTextFormat(Qt.RichText)
+                        self.timer = QTimer()
+                        self.timer.timeout.connect(self.timerTick)
+
+                    def showEvent(self, event):
+                        """ Start timer on message showEvent. """
+                        self.currentTime = 0
+                        self.timer.start(1000)
+
+                    def timerTick(self):
+                        """ Done message on timeout. """
+                        self.currentTime += 1
+                        if self.currentTime >= self.timeout:
+                            self.timer.stop()
+                            self.done(-1)
+
+                msgBox = EvMessageBox(
+                    entry.text,
+                    '{} {}'.format(conf.lang.TASK, date),
+                    Icon(byte=icons.alert).convertToIcon().getIcon(),
+                    QMessageBox.Information,
+                    conf.mesout)
                 reply = msgBox.exec_()
                 msgBox.raise_()
 
-                if reply == 0:
-                    date = dateToStr(dt.datetime.now() + dt.timedelta(0,
-                                                                conf.tdelta))
+                if reply != 1:
+                    td = conf.tdelta if reply == 0 else 300 - conf.mesout
+                    date = dateToStr(dt.datetime.now() + dt.timedelta(0, td))
                     date['date'] = date['date'].replace('/', '.')
                     date['time'] = date['time'].replace('.', ':')
                     tasks.append(Entry(date['date'], date['time'], entry.text))
@@ -869,9 +925,13 @@ class EditWindow(QWidget):
 
     def filterApply(self):
         """ Selects tasks to be shown. """
-        date = self.dateField.text()
-        text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
-        text = text.lower()
+        if conf.filter:
+            date = self.dateField.text()
+            text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
+            text = text.lower()
+        else:
+            date = ''
+            text = ''
 
         aTasks = []
         for i in tasks:
@@ -934,6 +994,8 @@ class OptionsWindow(QWidget):
         Language selector.
     tdelta(Days|Hours|Mins|Secs)Edit : QLineEdit object
         Widgets for time delta change.
+    mesoutSecsEdit : QLineEdit object
+        Widget for message timeout change.
     backupMinsEdit : QLineEdit object
         Widget for backup timeout change.
     """
@@ -949,7 +1011,7 @@ class OptionsWindow(QWidget):
         iconOpt = Icon(byte=icons.options).convertToIcon().getIcon()
         self.setWindowIcon(iconOpt)
 
-        self.resize(500, 150)
+        self.resize(500, 175)
         self.move(QApplication.desktop().screen().rect().center() -
                   self.rect().center()) # center window on screen
 
@@ -978,48 +1040,56 @@ class OptionsWindow(QWidget):
         # tdelta change
         tdeltaDict = parseSeconds(conf.tdelta, dic=True)
         self.grid.addWidget(QLabel(conf.lang.CHANGE_TDELTA), 1, 0)
-        
+
         self.tdeltaDaysEdit = QLineEdit()
         self.tdeltaDaysEdit.setText(str(tdeltaDict['days']))
         self.tdeltaDaysEdit.setValidator(QIntValidator(0, 999))
         self.grid.addWidget(self.tdeltaDaysEdit, 1, 1)
         self.grid.addWidget(QLabel(conf.lang.DAYS), 1, 2)
-        
+
         self.tdeltaHoursEdit = QLineEdit()
         self.tdeltaHoursEdit.setText(str(tdeltaDict['hours']))
         self.tdeltaHoursEdit.setValidator(QIntValidator(0, 23))
         self.grid.addWidget(self.tdeltaHoursEdit, 1, 3)
         self.grid.addWidget(QLabel(conf.lang.HOURS), 1, 4)
-        
+
         self.tdeltaMinsEdit = QLineEdit()
         self.tdeltaMinsEdit.setText(str(tdeltaDict['minutes']))
         self.tdeltaMinsEdit.setValidator(QIntValidator(0, 59))
         self.grid.addWidget(self.tdeltaMinsEdit, 1, 5)
         self.grid.addWidget(QLabel(conf.lang.MINUTES), 1, 6)
-        
+
         self.tdeltaSecsEdit = QLineEdit()
         self.tdeltaSecsEdit.setText(str(tdeltaDict['seconds']))
         self.tdeltaSecsEdit.setValidator(QIntValidator(0, 59))
         self.grid.addWidget(self.tdeltaSecsEdit, 1, 7)
         self.grid.addWidget(QLabel(conf.lang.SECONDS), 1, 8)
 
+        # mesout change
+        self.grid.addWidget(QLabel(conf.lang.MESSAGE_TIMER), 2, 0)
+        self.mesoutSecsEdit = QLineEdit()
+        self.mesoutSecsEdit.setText(str(conf.mesout))
+        self.mesoutSecsEdit.setValidator(QIntValidator(0, 299))
+        self.grid.addWidget(self.mesoutSecsEdit, 2, 1)
+        self.grid.addWidget(QLabel(conf.lang.SECONDS), 2, 2)
+
         # backup timeout change
-        self.grid.addWidget(QLabel(conf.lang.BACKUP_TIMER), 2, 0)
+        self.grid.addWidget(QLabel(conf.lang.BACKUP_TIMER), 3, 0)
         self.backupMinsEdit = QLineEdit()
         self.backupMinsEdit.setText(str(int(conf.backup / 60)))
         self.backupMinsEdit.setValidator(QIntValidator(0, 999))
-        self.grid.addWidget(self.backupMinsEdit, 2, 1)
-        self.grid.addWidget(QLabel(conf.lang.MINUTES), 2, 2)
+        self.grid.addWidget(self.backupMinsEdit, 3, 1)
+        self.grid.addWidget(QLabel(conf.lang.MINUTES), 3, 2)
 
         spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
-        self.grid.addItem(spacer, 3, 0)
+        self.grid.addItem(spacer, 4, 0)
 
         saveBtn = QPushButton(conf.lang.SAVE)
         saveBtn.clicked.connect(self.save)
-        self.grid.addWidget(saveBtn, 4, 5, 1, 2)
+        self.grid.addWidget(saveBtn, 5, 5, 1, 2)
         closeBtn = QPushButton(conf.lang.CLOSE)
         closeBtn.clicked.connect(lambda: self.closeEvent(QCloseEvent()))
-        self.grid.addWidget(closeBtn, 4, 7, 1, 2)
+        self.grid.addWidget(closeBtn, 5, 7, 1, 2)
 
     def save(self):
         """ Save changes to config. """
@@ -1031,6 +1101,13 @@ class OptionsWindow(QWidget):
         tdelta[3] *= 86400
         tdelta = sum(tdelta)
         conf.tdelta = tdelta
+
+        if self.mesoutSecsEdit.text() == '':
+            self.mesoutSecsEdit.setText('0')
+        mesout = int(self.mesoutSecsEdit.text())
+        if mesout == 0:
+            mesout = 60
+        conf.mesout = mesout
 
         if self.backupMinsEdit.text() == '':
             self.backupMinsEdit.setText('0')
