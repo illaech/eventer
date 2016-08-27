@@ -342,20 +342,8 @@ class MainWindow(QWidget):
         menu.addAction(conf.lang.EDIT_ACTION,
                        lambda: self.showWindow('editAction'))
         menu.addSeparator()
-
-        langlist = QActionGroup(self, exclusive=True)
-        act_ru = QAction('Русский', self, checkable=True)
-        act_ru.triggered.connect(lambda evt: langSelect(conf, 'RU'))
-        act_en = QAction('English', self, checkable=True)
-        act_en.triggered.connect(lambda evt: langSelect(conf, 'EN'))
-        langlist.addAction(act_ru)
-        langlist.addAction(act_en)
-
-        langmenu = menu.addMenu(conf.lang.CHANGE_LANGUAGE)
-        langmenu.addAction(act_ru)
-        langmenu.addAction(act_en)
-        act_ru.setChecked(True)
-        self.lang = {'RU': act_ru, 'EN': act_en}
+        menu.addAction(conf.lang.OPT_ACTION,
+                       lambda: self.showWindow('optAction'))
 
         menu.addAction(conf.lang.RESTORE, self.restore)
         menu.addAction(conf.lang.QUIT, self.quit)
@@ -368,6 +356,8 @@ class MainWindow(QWidget):
         self.addActive = False
         self.editWindow = None
         self.editActive = False
+        self.optWindow = None
+        self.optActive = False
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.timerTick)
@@ -454,6 +444,15 @@ class MainWindow(QWidget):
                 self.addWindow.setFocus(True)
                 self.addWindow.activateWindow()
             return self.addWindow
+        elif event == 'optAction':
+            if self.addActive:
+                self.addWindow.hide()
+            if self.editActive:
+                self.editWindow.hide()
+            self.optWindow = OptionsWindow(self)
+            self.optWindow.show()
+            self.optWindow.setFocus(True)
+            self.optWindow.activateWindow()
 
     def backup(self):
         """ Copies content of tasks file to backup file. """
@@ -934,7 +933,7 @@ class OptionsWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__()
         self.parentWindow = parent
-        self.parentWindow.optionsActive = True
+        self.parentWindow.optActive = True
         self.initUI()
 
     def initUI(self):
@@ -943,7 +942,7 @@ class OptionsWindow(QWidget):
         iconOpt = Icon(byte=icons.options).convertToIcon().getIcon()
         self.setWindowIcon(iconOpt)
 
-        self.resize(500, 450)
+        self.resize(500, 150)
         self.move(QApplication.desktop().screen().rect().center() -
                   self.rect().center()) # center window on screen
 
@@ -955,29 +954,101 @@ class OptionsWindow(QWidget):
     def fill(self):
         """ Fills windows with widgets. """
         clearLayout(self.grid)
-        tdeltaDict = parseSeconds(self.conf.tdelta)
+        tdeltaDict = parseSeconds(conf.tdelta, dic=True)
 
         self.grid.addWidget(QLabel(conf.lang.CHANGE_LANGUAGE), 0, 0)
+        self.langCombo = QComboBox()
+        langList = []
+        for i in langs.values():
+            if i.NAME == conf.lang.NAME:
+                langList.insert(0, i.FULL_NAME)
+            else:
+                langList.append(i.FULL_NAME)
+
+        self.langCombo.insertItems(0, langList)
+        self.grid.addWidget(self.langCombo, 0, 1, 1, 4)
 
         self.grid.addWidget(QLabel(conf.lang.CHANGE_TDELTA), 1, 0)
-        self.tdeltaDaysEdit = QLineEdit(tdeltaDict['days'])
+        self.tdeltaDaysEdit = QLineEdit()
+        self.tdeltaDaysEdit.setText(str(tdeltaDict['days']))
+        self.tdeltaDaysEdit.setValidator(QIntValidator(0, 999))
         self.grid.addWidget(self.tdeltaDaysEdit, 1, 1)
         self.grid.addWidget(QLabel(conf.lang.DAYS), 1, 2)
-        self.tdeltaHoursEdit = QLineEdit(tdeltaDict['hours'])
+        self.tdeltaHoursEdit = QLineEdit()
+        self.tdeltaHoursEdit.setText(str(tdeltaDict['hours']))
+        self.tdeltaHoursEdit.setValidator(QIntValidator(0, 23))
         self.grid.addWidget(self.tdeltaHoursEdit, 1, 3)
         self.grid.addWidget(QLabel(conf.lang.HOURS), 1, 4)
-        self.tdeltaMinsEdit = QLineEdit(tdeltaDict['minutes'])
+        self.tdeltaMinsEdit = QLineEdit()
+        self.tdeltaMinsEdit.setText(str(tdeltaDict['minutes']))
+        self.tdeltaMinsEdit.setValidator(QIntValidator(0, 59))
         self.grid.addWidget(self.tdeltaMinsEdit, 1, 5)
         self.grid.addWidget(QLabel(conf.lang.MINUTES), 1, 6)
-        self.tdeltaSecsEdit = QLineEdit(tdeltaDict['seconds'])
+        self.tdeltaSecsEdit = QLineEdit()
+        self.tdeltaSecsEdit.setText(str(tdeltaDict['seconds']))
+        self.tdeltaSecsEdit.setValidator(QIntValidator(0, 59))
         self.grid.addWidget(self.tdeltaSecsEdit, 1, 7)
         self.grid.addWidget(QLabel(conf.lang.SECONDS), 1, 8)
 
         self.grid.addWidget(QLabel(conf.lang.BACKUP_TIMER), 2, 0)
-        self.backupMinsEdit = QLineEdit(int(self.backup / 60))
-        self.grid.addWidget(self.tdeltaSecsEdit, 2, 1)
+        self.backupMinsEdit = QLineEdit()
+        self.backupMinsEdit.setText(str(int(conf.backup / 60)))
+        self.backupMinsEdit.setValidator(QIntValidator(0, 999))
+        self.grid.addWidget(self.backupMinsEdit, 2, 1)
         self.grid.addWidget(QLabel(conf.lang.MINUTES), 2, 2)
 
+        spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
+        self.grid.addItem(spacer, 3, 0)
+
+        saveBtn = QPushButton(conf.lang.SAVE)
+        saveBtn.clicked.connect(self.save)
+        self.grid.addWidget(saveBtn, 4, 5, 1, 2)
+        closeBtn = QPushButton(conf.lang.CLOSE)
+        closeBtn.clicked.connect(lambda: self.closeEvent(QCloseEvent()))
+        self.grid.addWidget(closeBtn, 4, 7, 1, 2)
+
+    def save(self):
+        tdelta = [self.tdeltaSecsEdit.text(), self.tdeltaMinsEdit.text(),
+                  self.tdeltaHoursEdit.text(), self.tdeltaDaysEdit.text()]
+        tdelta = list(map(lambda x: int(x) if x != '' else 0, tdelta))
+        tdelta[1] *= 60
+        tdelta[2] *= 3600
+        tdelta[3] *= 86400
+        tdelta = sum(tdelta)
+        conf.tdelta = tdelta
+
+        if self.backupMinsEdit.text() == '':
+            self.backupMinsEdit.setText('0')
+        backup = int(self.backupMinsEdit.text())
+        if backup == 0:
+            backup = 5
+        conf.backup = backup * 60
+
+        if self.langCombo.currentText() != conf.lang.FULL_NAME:
+            for i in langs.values():
+                if i.FULL_NAME == self.langCombo.currentText():
+                    conf.lang = i
+
+        self.closeEvent(QCloseEvent(), changed=True)
+
+    def closeEvent(self, event, changed=False):
+        """ Closes window. """
+        self.parentWindow.optActive = False
+        if self.parentWindow.addActive:
+            self.parentWindow.addWindow.show()
+            if self.parentWindow.addWindow.index == None:
+                if self.parentWindow.editActive:
+                    self.parentWindow.editWindow.show()
+        else:
+            if self.parentWindow.editActive:
+                self.parentWindow.editWindow.show()
+
+        event.ignore()
+
+        if changed:
+            reload()
+
+        self.hide()
 
 """ "Main" program part. """
 
@@ -992,9 +1063,6 @@ def reload():
     params = (w.addActive, w.addWindow, w.editActive, w.editWindow)
     w.quit(False) # 'really' parameter is set to False
     w = MainWindow() # do it again
-    for l in w.lang:
-        w.lang[l].setChecked(False)
-    w.lang[str(conf.lang)].setChecked(True) # apply config changes
     rewriteConfig()
     # restore parameters
     w.addActive, w.addWindow, w.editActive, w.editWindow = params
@@ -1004,7 +1072,13 @@ def reload():
         w.editWindow = None
         if w.editActive:
             w.editActive = False
-            w.showWindow('editAction')
+            if w.addActive:
+                if w.addWindow.index != None:
+                    pass
+                else:
+                    w.showWindow('editAction')
+            else:
+                w.showWindow('editAction')
     if w.addWindow:
         if w.addActive:
             index = w.addWindow.index
