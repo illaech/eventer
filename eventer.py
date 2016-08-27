@@ -4,9 +4,16 @@ from math import floor
 import json
 import datetime as dt
 import base64 as b64
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QImage, QIcon, QPixmap, QRegExpValidator, \
+                        QCloseEvent, QValidator, QFontMetrics, QResizeEvent, \
+                        QIntValidator
+from PyQt5.QtCore import QByteArray, QTimer, Qt, QRegExp, QCoreApplication, \
+                         QSize
+from PyQt5.QtWidgets import QMessageBox, QSpacerItem, QWidget, \
+                            QSystemTrayIcon, QMenu, QPushButton, QLineEdit, \
+                            QComboBox, QApplication, QGridLayout, \
+                            QHBoxLayout, QVBoxLayout, QLabel, QTextEdit, \
+                            QSizePolicy, QScrollArea
 from lang import RU, EN
 import icons
 
@@ -186,7 +193,7 @@ conf = Config() # Config object
 
 """ Preliminary definitions. """
 
-errors = []  # see line 1224
+errors = []  # see line 1235
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -918,9 +925,13 @@ class EditWindow(QWidget):
 
     def filterApply(self):
         """ Selects tasks to be shown. """
-        date = self.dateField.text()
-        text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
-        text = text.lower()
+        if conf.filter:
+            date = self.dateField.text()
+            text = self.textField.text().replace('\n', ' ').replace('\t', '   ')
+            text = text.lower()
+        else:
+            date = ''
+            text = ''
 
         aTasks = []
         for i in tasks:
