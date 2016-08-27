@@ -186,7 +186,7 @@ conf = Config() # Config object
 
 """ Preliminary definitions. """
 
-errors = []  # see line 1158
+errors = []  # see line 1224
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -386,6 +386,27 @@ class MainWindow(QWidget):
             if (date - today).days < 0:
                 tasks.remove(entry)
                 class EvMessageBox(QMessageBox):
+                    """ QMessageBox with timer.
+
+                    Parameters
+                    ----------
+                    text : string
+                        Text of message.
+                    title : string
+                        Title of message window.
+                    wicon : QIcon object
+                        Icon of message window.
+                    icon : QMessageBox.Icon int
+                        Icon of message body.
+                    timeout : int
+                        Time for message has being shown.
+
+                    Useful attributes
+                    -----------------
+                    timer : QTimer object
+                        Timer attached to message.
+
+                    """
                     def __init__(self, text, title, wicon, icon, timeout):
                         super().__init__()
                         self.timeout = timeout
@@ -404,10 +425,12 @@ class MainWindow(QWidget):
                         self.timer.timeout.connect(self.timerTick)
 
                     def showEvent(self, event):
+                        """ Start timer on message showEvent. """
                         self.currentTime = 0
                         self.timer.start(1000)
 
                     def timerTick(self):
+                        """ Done message on timeout. """
                         self.currentTime += 1
                         if self.currentTime >= self.timeout:
                             self.timer.stop()
