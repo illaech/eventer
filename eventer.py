@@ -181,7 +181,7 @@ conf = Config() # Config object
 
 """ Preliminary definitions. """
 
-errors = []  # see line 997
+errors = []  # see line 1158
 
 # select directory where 'calendar.txt' will be placed
 if sys.platform == 'win32': # if platform is windows, choose %appdata%
@@ -500,7 +500,7 @@ class AddWindow(QWidget):
 
     Useful attributes
     -----------------
-    parentWindow : MainWindow object
+    parentWindow : MainWindow (or EditWindow) object
         Parent of the window.
     (date|time)Edit : QLineEdit object
     textEdit : QTextEdit object
@@ -928,7 +928,14 @@ class OptionsWindow(QWidget):
 
     Useful attributes
     -----------------
-
+    parentWindow : MainWindow object
+        Parent of the window.
+    langCombo : QComboBox object
+        Language selector.
+    tdelta(Days|Hours|Mins|Secs)Edit : QLineEdit object
+        Widgets for time delta change.
+    backupMinsEdit : QLineEdit object
+        Widget for backup timeout change.
     """
     def __init__(self, parent=None):
         super().__init__()
@@ -952,44 +959,51 @@ class OptionsWindow(QWidget):
         self.fill()
 
     def fill(self):
-        """ Fills windows with widgets. """
+        """ Fills window with widgets. """
         clearLayout(self.grid)
-        tdeltaDict = parseSeconds(conf.tdelta, dic=True)
 
+        # language selector
         self.grid.addWidget(QLabel(conf.lang.CHANGE_LANGUAGE), 0, 0)
         self.langCombo = QComboBox()
         langList = []
         for i in langs.values():
             if i.NAME == conf.lang.NAME:
-                langList.insert(0, i.FULL_NAME)
+                langList.insert(0, i.FULL_NAME) # current language is first
             else:
                 langList.append(i.FULL_NAME)
 
         self.langCombo.insertItems(0, langList)
         self.grid.addWidget(self.langCombo, 0, 1, 1, 4)
 
+        # tdelta change
+        tdeltaDict = parseSeconds(conf.tdelta, dic=True)
         self.grid.addWidget(QLabel(conf.lang.CHANGE_TDELTA), 1, 0)
+        
         self.tdeltaDaysEdit = QLineEdit()
         self.tdeltaDaysEdit.setText(str(tdeltaDict['days']))
         self.tdeltaDaysEdit.setValidator(QIntValidator(0, 999))
         self.grid.addWidget(self.tdeltaDaysEdit, 1, 1)
         self.grid.addWidget(QLabel(conf.lang.DAYS), 1, 2)
+        
         self.tdeltaHoursEdit = QLineEdit()
         self.tdeltaHoursEdit.setText(str(tdeltaDict['hours']))
         self.tdeltaHoursEdit.setValidator(QIntValidator(0, 23))
         self.grid.addWidget(self.tdeltaHoursEdit, 1, 3)
         self.grid.addWidget(QLabel(conf.lang.HOURS), 1, 4)
+        
         self.tdeltaMinsEdit = QLineEdit()
         self.tdeltaMinsEdit.setText(str(tdeltaDict['minutes']))
         self.tdeltaMinsEdit.setValidator(QIntValidator(0, 59))
         self.grid.addWidget(self.tdeltaMinsEdit, 1, 5)
         self.grid.addWidget(QLabel(conf.lang.MINUTES), 1, 6)
+        
         self.tdeltaSecsEdit = QLineEdit()
         self.tdeltaSecsEdit.setText(str(tdeltaDict['seconds']))
         self.tdeltaSecsEdit.setValidator(QIntValidator(0, 59))
         self.grid.addWidget(self.tdeltaSecsEdit, 1, 7)
         self.grid.addWidget(QLabel(conf.lang.SECONDS), 1, 8)
 
+        # backup timeout change
         self.grid.addWidget(QLabel(conf.lang.BACKUP_TIMER), 2, 0)
         self.backupMinsEdit = QLineEdit()
         self.backupMinsEdit.setText(str(int(conf.backup / 60)))
@@ -1008,6 +1022,7 @@ class OptionsWindow(QWidget):
         self.grid.addWidget(closeBtn, 4, 7, 1, 2)
 
     def save(self):
+        """ Save changes to config. """
         tdelta = [self.tdeltaSecsEdit.text(), self.tdeltaMinsEdit.text(),
                   self.tdeltaHoursEdit.text(), self.tdeltaDaysEdit.text()]
         tdelta = list(map(lambda x: int(x) if x != '' else 0, tdelta))
