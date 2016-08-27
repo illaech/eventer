@@ -9,7 +9,8 @@ allowed = ('name', 'cant_find_dir', 'unsupport_sys', 'cant_create_dir',
          'restore_text', 'day_', 'dayd', 'days', 'dayf', 'hour_', 'hourd',
          'hours', 'hourf', 'minute_', 'minuted', 'minutes', 'minutef',
          'second_', 'secondd', 'seconds', 'secondf', 'filter', 'date_f',
-         'text_f', 'hidden_f', 'visible_f')
+         'text_f', 'hidden_f', 'visible_f', 'opt_title', 'change_tdelta',
+         'backup_timer')
 
 ru_dict = {
     'NAME': 'RU',
@@ -18,14 +19,14 @@ ru_dict = {
     'CANT_CREATE_DIR': 'Не могу создать директорию',
     'CANT_OPEN_FILE': 'Не могу открыть файл',
     'ERROR': 'Ошибка',
-    'ADD_ACTION': 'Добавить задачу',
-    'EDIT_ACTION': 'Изменить задачи',
+    'ADD_ACTION': 'Добавить напоминание',
+    'EDIT_ACTION': 'Изменить напоминания',
     'CHANGE_LANGUAGE': 'Сменить язык',
     'QUIT': 'Выход',
     'TASK': 'Задача',
     'CLOSE': 'Закрыть',
     'REPEAT': 'Повторить через {}',
-    'ADD_TITLE': 'Добавление задачи',
+    'ADD_TITLE': 'Добавление напоминания',
     'SAVE': 'Сохранить',
     'DATE': 'Дата',
     'TIME': 'Время',
@@ -41,12 +42,12 @@ ru_dict = {
                          '<i>с</i>; а также точки вместо двоеточий',
     'TEXT_TOOLTIP_TEXT': 'Текст напоминания',
     'SAVE_TOOLTIP_TEXT': 'Сохранить напоминания',
-    'CLOSE_TOOLTIP_TEXT': 'Закрыть окно без добавления задачи',
-    'EDIT_TITLE': 'Изменение задач',
+    'CLOSE_TOOLTIP_TEXT': 'Закрыть окно без добавления напоминания',
+    'EDIT_TITLE': 'Изменение напоминаний',
     'EDIT': 'Изменить',
     'DELETE': 'Удалить',
-    'EDIT_TOOLTIP_TEXT': 'Изменить эту задачу',
-    'DELETE_TOOLTIP_TEXT': 'Удалить эту задачу',
+    'EDIT_TOOLTIP_TEXT': 'Изменить это напоминание',
+    'DELETE_TOOLTIP_TEXT': 'Удалить это напоминание',
     'NO_TASKS': 'Нет задач для отображения',
     'SMTH_WRONG': 'Упс. Что-то пошло не так',
     'RESTORE': 'Восстановить напоминания',
@@ -71,7 +72,10 @@ ru_dict = {
     'SECONDF': 'секунды',
     'FILTER': 'Фильтр',
     'TEXT_F': 'Текст:',
-    'DATE_F': 'Дата:'
+    'DATE_F': 'Дата:',
+    'OPT_TITLE': 'Настройки',
+    'CHANGE_TDELTA': 'Повторять задачи через',
+    'BACKUP_TIMER': 'Сохранять задачи каждые'
 }
 
 class Language:
@@ -139,6 +143,9 @@ class Language:
     TEXT_F = 'Text:'
     VISIBLE_F = '˅'
     HIDDEN_F = '˄'
+    OPT_TITLE = 'Settings'
+    CHANGE_TDELTA = 'Repeat reminders after'
+    BACKUP_TIMER = 'Save reminders every'
     
     def __init__(self, dic=None, **kwargs):
         if dic != None:

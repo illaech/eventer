@@ -36,7 +36,7 @@ def getFormattedStrTime(time, t_, td, tf, ts):
         frmtd = '{} {}'.format(time, ts) # 5 to 20, 25 to 30, 35 to 40, ...
     return frmtd
 
-def secondsToStr(num):
+def secondsToStr(num, dic=False):
     """ Format seconds to string includes days, hours, minutes and seconds. """
     days = floor(num / 86400)
     hours = floor(num % 86400 / 3600)
@@ -51,6 +51,10 @@ def secondsToStr(num):
                                   conf.lang.MINUTEF, conf.lang.MINUTES)
     seconds = getFormattedStrTime(seconds, conf.lang.SECOND_, conf.lang.SECONDD,
                                   conf.lang.SECONDF, conf.lang.SECONDS)
+
+    if dic:
+        return {'days': days, 'hours': hours,
+                'minutes': minutes, 'seconds': seconds}
 
     text = ''
     text += days if days != 0 else ''
@@ -139,23 +143,19 @@ class Config:
         Defines appropriate input parameters.
 
     """
-    supported = ('lang', 'tdelta', 'filter')
-    lang = None
-    tdelta = None
-    filter = None
+    supported = ('lang', 'tdelta', 'filter', 'backup')
 
-    def __init__(self, lang=RU, tdelta=600, filter=True):
+    def __init__(self, lang=RU, tdelta=600, filter=True, backup=300):
         self.lang = lang
         self.tdelta = tdelta
         self.filter = filter
+        self.backup = backup
 
     def __str__(self):
         """ Represent current configuration. """
-        dic = {
-            'lang': str(self.lang),
-            'tdelta': self.tdelta,
-            'filter': self.filter
-        }
+        dic = {}
+        for i in self.supported:
+            dic[i] = getattr(self, i)
         return json.dumps(dic)
 
     def load(self, dic):
@@ -172,10 +172,10 @@ class Config:
             with open(f, 'w') as f_:
                 f_.write(str(self))
         except IOError:
-            errors.append(['{} "{}"'.format(conf.lang['CANT_OPEN_FILE'], f),
+            errors.append(['{} "{}"'.format(self.lang['CANT_OPEN_FILE'], f),
                            'IOError: Can\'t open file!'])
 
-conf = Config(RU, 600, True) # Config object
+conf = Config() # Config object
 
 """ Preliminary definitions. """
 
@@ -257,6 +257,14 @@ def error(widget, text, textconsole):
     # the application immediately after the first error.
     # Also, logging to text file can be used here.
     print(textconsole)
+
+def clearLayout(layout):
+    """ Removes all widgets from specific layout. """
+    for i in reversed(range(layout.count())):
+        item = layout.itemAt(i)
+        if not isinstance(item, QSpacerItem):
+            item.widget().close()
+        layout.removeItem(item)
 
 
 class Entry:
@@ -366,7 +374,7 @@ class MainWindow(QWidget):
         self.backup()
         self.backupTimer = QTimer()
         self.backupTimer.timeout.connect(self.backup)
-        self.backupTimer.start(300000)
+        self.backupTimer.start(conf.backup * 1000)
 
     def timerTick(self):
         """ Checks tasks entry's time if it is up. Shows message with
@@ -749,17 +757,9 @@ class EditWindow(QWidget):
         iconEdit = Icon(byte=icons.edit).convertToIcon().getIcon()
         self.setWindowIcon(iconEdit)
 
-    def clearLayout(self, layout):
-        """ Removes all widgets from specific layout. """
-        for i in reversed(range(layout.count())):
-            item = layout.itemAt(i)
-            if not isinstance(item, QSpacerItem):
-                item.widget().close()
-            layout.removeItem(item)
-
     def drawFilter(self):
         """ Draws filter widgets. """
-        self.clearLayout(self.filter)
+        clearLayout(self.filter)
 
         self.hideBtn = QPushButton()
         if conf.filter:
@@ -811,7 +811,7 @@ class EditWindow(QWidget):
     def fill(self):
         """ Fill self.taskArea by items that represens tasks. """
         # delete items from self.grid
-        self.clearLayout(self.grid)
+        clearLayout(self.grid)
 
         aTasks = self.activeTasks
         self.rows = [{} for i in range(len(aTasks))]
@@ -920,6 +920,61 @@ class EditWindow(QWidget):
         self.parentWindow.editActive = False
         event.ignore()
         self.hide()
+
+
+class OptionsWindow(QWidget):
+    """ Window for changing settings.
+
+    Useful attributes
+    -----------------
+
+    """
+    def __init__(self, parent=None):
+        super().__init__()
+        self.parentWindow = parent
+        self.parentWindow.optionsActive = True
+        self.initUI()
+
+    def initUI(self):
+        """ Init user interface. """
+        self.setWindowTitle(conf.lang.OPT_TITLE)
+        iconOpt = Icon(byte=icons.options).convertToIcon().getIcon()
+        self.setWindowIcon(iconOpt)
+
+        self.resize(500, 450)
+        self.move(QApplication.desktop().screen().rect().center() -
+                  self.rect().center()) # center window on screen
+
+        self.grid = QGridLayout()
+        self.setLayout(self.grid)
+
+        self.fill()
+
+    def fill(self):
+        """ Fills windows with widgets. """
+        clearLayout(self.grid)
+        tdeltaDict = secondsToStr(self.conf.tdelta)
+
+        self.grid.addWidget(QLabel(conf.lang.CHANGE_LANGUAGE), 0, 0)
+
+        self.grid.addWidget(QLabel(conf.lang.CHANGE_TDELTA), 1, 0)
+        self.tdeltaDaysEdit = QLineEdit(tdeltaDict['days'])
+        self.grid.addWidget(self.tdeltaDaysEdit, 1, 1)
+        self.grid.addWidget(QLabel(conf.lang.DAYS), 1, 2)
+        self.tdeltaHoursEdit = QLineEdit(tdeltaDict['hours'])
+        self.grid.addWidget(self.tdeltaHoursEdit, 1, 3)
+        self.grid.addWidget(QLabel(conf.lang.HOURS), 1, 4)
+        self.tdeltaMinsEdit = QLineEdit(tdeltaDict['minutes'])
+        self.grid.addWidget(self.tdeltaMinsEdit, 1, 5)
+        self.grid.addWidget(QLabel(conf.lang.MINUTES), 1, 6)
+        self.tdeltaSecsEdit = QLineEdit(tdeltaDict['seconds'])
+        self.grid.addWidget(self.tdeltaSecsEdit, 1, 7)
+        self.grid.addWidget(QLabel(conf.lang.SECONDS), 1, 8)
+
+        self.grid.addWidget(QLabel(conf.lang.BACKUP_TIMER), 2, 0)
+        self.backupMinsEdit = QLineEdit(int(self.backup / 60))
+        self.grid.addWidget(self.tdeltaSecsEdit, 2, 1)
+        self.grid.addWidget(QLabel(conf.lang.MINUTES), 2, 2)
 
 
 """ "Main" program part. """
