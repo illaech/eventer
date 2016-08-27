@@ -424,7 +424,7 @@ class MainWindow(QWidget):
                 msgBox.raise_()
 
                 if reply != 1:
-                    td = conf.tdelta if reply == 0 else 240
+                    td = conf.tdelta if reply == 0 else 300 - conf.mesout
                     date = dateToStr(dt.datetime.now() + dt.timedelta(0, td))
                     date['date'] = date['date'].replace('/', '.')
                     date['time'] = date['time'].replace('.', ':')
@@ -961,6 +961,8 @@ class OptionsWindow(QWidget):
         Language selector.
     tdelta(Days|Hours|Mins|Secs)Edit : QLineEdit object
         Widgets for time delta change.
+    mesoutSecsEdit : QLineEdit object
+        Widget for message timeout change.
     backupMinsEdit : QLineEdit object
         Widget for backup timeout change.
     """
@@ -976,7 +978,7 @@ class OptionsWindow(QWidget):
         iconOpt = Icon(byte=icons.options).convertToIcon().getIcon()
         self.setWindowIcon(iconOpt)
 
-        self.resize(500, 150)
+        self.resize(500, 175)
         self.move(QApplication.desktop().screen().rect().center() -
                   self.rect().center()) # center window on screen
 
@@ -1030,23 +1032,31 @@ class OptionsWindow(QWidget):
         self.grid.addWidget(self.tdeltaSecsEdit, 1, 7)
         self.grid.addWidget(QLabel(conf.lang.SECONDS), 1, 8)
 
+        # mesout change
+        self.grid.addWidget(QLabel(conf.lang.MESSAGE_TIMER), 2, 0)
+        self.mesoutSecsEdit = QLineEdit()
+        self.mesoutSecsEdit.setText(str(conf.mesout))
+        self.mesoutSecsEdit.setValidator(QIntValidator(0, 299))
+        self.grid.addWidget(self.mesoutSecsEdit, 2, 1)
+        self.grid.addWidget(QLabel(conf.lang.SECONDS), 2, 2)
+
         # backup timeout change
-        self.grid.addWidget(QLabel(conf.lang.BACKUP_TIMER), 2, 0)
+        self.grid.addWidget(QLabel(conf.lang.BACKUP_TIMER), 3, 0)
         self.backupMinsEdit = QLineEdit()
         self.backupMinsEdit.setText(str(int(conf.backup / 60)))
         self.backupMinsEdit.setValidator(QIntValidator(0, 999))
-        self.grid.addWidget(self.backupMinsEdit, 2, 1)
-        self.grid.addWidget(QLabel(conf.lang.MINUTES), 2, 2)
+        self.grid.addWidget(self.backupMinsEdit, 3, 1)
+        self.grid.addWidget(QLabel(conf.lang.MINUTES), 3, 2)
 
         spacer = QSpacerItem(10, 0, vPolicy=QSizePolicy.MinimumExpanding)
-        self.grid.addItem(spacer, 3, 0)
+        self.grid.addItem(spacer, 4, 0)
 
         saveBtn = QPushButton(conf.lang.SAVE)
         saveBtn.clicked.connect(self.save)
-        self.grid.addWidget(saveBtn, 4, 5, 1, 2)
+        self.grid.addWidget(saveBtn, 5, 5, 1, 2)
         closeBtn = QPushButton(conf.lang.CLOSE)
         closeBtn.clicked.connect(lambda: self.closeEvent(QCloseEvent()))
-        self.grid.addWidget(closeBtn, 4, 7, 1, 2)
+        self.grid.addWidget(closeBtn, 5, 7, 1, 2)
 
     def save(self):
         """ Save changes to config. """
@@ -1058,6 +1068,13 @@ class OptionsWindow(QWidget):
         tdelta[3] *= 86400
         tdelta = sum(tdelta)
         conf.tdelta = tdelta
+
+        if self.mesoutSecsEdit.text() == '':
+            self.mesoutSecsEdit.setText('0')
+        mesout = int(self.mesoutSecsEdit.text())
+        if mesout == 0:
+            mesout = 60
+        conf.mesout = mesout
 
         if self.backupMinsEdit.text() == '':
             self.backupMinsEdit.setText('0')
