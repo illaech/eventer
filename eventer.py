@@ -402,11 +402,10 @@ class MainWindow(QWidget):
                         # self.setTextFormat(Qt.RichText)
                         self.timer = QTimer()
                         self.timer.timeout.connect(self.timerTick)
-                        self.timer.start(1000)
 
                     def showEvent(self, event):
                         self.currentTime = 0
-                        self.startTimer(self.timeout)
+                        self.timer.start(1000)
 
                     def timerTick(self):
                         self.currentTime += 1
