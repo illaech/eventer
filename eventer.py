@@ -155,7 +155,9 @@ class Config:
         """ Represent current configuration. """
         dic = {}
         for i in self.supported:
-            dic[i] = getattr(self, i)
+            dic[i] = str(getattr(self, i)) if \
+                     hasattr(getattr(self, i), '__dict__') else \
+                     getattr(self, i)
         return json.dumps(dic)
 
     def load(self, dic):
