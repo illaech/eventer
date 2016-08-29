@@ -5,9 +5,9 @@ import json
 import datetime as dt
 import base64 as b64
 from PyQt5.QtGui import QValidator, QRegExpValidator, QIntValidator, \
-                        QImage, QPixmap, QIcon, QFontMetrics \
-                        QCloseEvent, QResizeEvent \
-from PyQt5.QtCore import Qt, QCoreApplication, QRegExp, QByteArray, QSize \
+                        QImage, QPixmap, QIcon, QFontMetrics, \
+                        QCloseEvent, QResizeEvent
+from PyQt5.QtCore import Qt, QCoreApplication, QRegExp, QByteArray, QSize, \
                          QTimer
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QWidget, \
                             QHBoxLayout, QVBoxLayout, QGridLayout, \
